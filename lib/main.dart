@@ -12,7 +12,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await GetStorage.init();
-  
+
   await dotenv.load(fileName: ".env");
 
   SystemChrome.setPreferredOrientations(

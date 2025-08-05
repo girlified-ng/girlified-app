@@ -14,6 +14,7 @@ import 'package:girlified/components/buttons/custom_button.dart';
 import 'package:girlified/components/form/form_password_field.dart';
 import 'package:girlified/components/snackbars/custom_snackbar.dart';
 import 'package:girlified/components/buttons/custom_loading_button.dart';
+import 'package:girlified/data/services/authentication_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -26,6 +27,8 @@ class _LoginScreenState extends State<LoginScreen> {
   bool hidePassword = true;
   RxBool isEmailValid = false.obs;
   RxBool isPhoneNumberValid = false.obs;
+
+  final authController = Get.put(AuthenticationService());
 
   TextEditingController emailController = TextEditingController();
   TextEditingController passwordController = TextEditingController();
@@ -63,19 +66,26 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void submitHandler() async {
-    Get.toNamed(AppRoutes.dashboardRoute);
+    if (!emailController.text.isEmail) {
+      return customErrorMessageSnackbar(
+        title: 'Message',
+        message: 'Invalid email address',
+      );
+    } else if (passwordController.text.isEmpty) {
+      return customErrorMessageSnackbar(
+        title: 'Message',
+        message: 'Password is required',
+      );
+    } else {
+      authController.signInService(
+        emailController.text.trim(),
+        passwordController.text.trim(),
+      );
 
-    // if (!emailController.text.isEmail) {
-    //   return customErrorMessageSnackbar(
-    //     title: 'Message',
-    //     message: 'Invalid email address',
-    //   );
-    // } else if (passwordController.text.isEmpty) {
-    //   return customErrorMessageSnackbar(
-    //     title: 'Message',
-    //     message: 'Password is required',
-    //   );
-    // } else {}
+      Get.toNamed(AppRoutes.dashboardRoute);
+      return customSuccessMessageSnackbar(
+          title: 'Message', message: 'Login Successful');
+    }
   }
 
   @override

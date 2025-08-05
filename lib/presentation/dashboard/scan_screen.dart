@@ -1,5 +1,9 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
+import 'package:get/get.dart';
+import 'package:girlified/data/services/scan_service.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:girlified/components/appbar/default_appbar.dart';
 import 'package:girlified/core/constants/sizes.dart';
@@ -17,6 +21,8 @@ class ScanScreen extends StatefulWidget {
 }
 
 class _ScanScreenState extends State<ScanScreen> {
+  final scanController = Get.put(ScanController());
+
   CameraController? _controller;
   bool _isCameraInitialized = false;
   bool _isFlashOn = false;
@@ -120,7 +126,7 @@ class _ScanScreenState extends State<ScanScreen> {
     if (_controller?.value.isInitialized ?? false) {
       try {
         final image = await _controller!.takePicture();
-        // TODO: Handle the captured image
+        await scanController.upLoadImage(File(image.path));
         debugPrint('Picture taken: ${image.path}');
       } catch (e) {
         debugPrint('Picture capture error: $e');
