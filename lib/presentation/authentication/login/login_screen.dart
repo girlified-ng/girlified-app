@@ -82,9 +82,9 @@ class _LoginScreenState extends State<LoginScreen> {
         passwordController.text.trim(),
       );
 
-      Get.toNamed(AppRoutes.dashboardRoute);
-      return customSuccessMessageSnackbar(
-          title: 'Message', message: 'Login Successful');
+      // Get.toNamed(AppRoutes.dashboardRoute);
+      // return customSuccessMessageSnackbar(
+      //     title: 'Message', message: 'Login Successful');
     }
   }
 

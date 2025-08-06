@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:girlified/core/constants/sizes.dart';
 import 'package:girlified/core/constants/colors.dart';
 import 'package:girlified/core/providers/index.dart';
@@ -6,6 +7,8 @@ import 'package:girlified/components/text/title_text.dart';
 import 'package:girlified/components/text/body_text.dart';
 import 'package:girlified/components/appbar/default_appbar.dart';
 import 'package:girlified/components/navigation/custom_bottom_navigation.dart';
+
+import '../../data/services/authentication_service.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -15,6 +18,8 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
+  final authController = Get.put(AuthenticationService());
+
   Widget _buildSettingsItem({
     required IconData icon,
     required String title,
@@ -607,6 +612,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             // Sign Out Button
             InkWell(
               onTap: () {
+                authController.logout();
                 // TODO: Implement sign out
               },
               child: Container(
@@ -623,7 +629,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(
+                    const Icon(
                       Icons.logout,
                       color: AppColors.redColor,
                       size: 20,
