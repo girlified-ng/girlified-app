@@ -42,6 +42,7 @@ class AuthenticationService extends GetxController {
       {'email': 'topetemi285@gmail.com', 'password': 'pass123'},
       {'email': 'admin@gmail.com', 'password': 'admin456'},
       {'email': 'test@gmail.com', 'password': 'test789'},
+      {'email': 'williamskevwe@gmail.com', 'password': 'Password123'},
     ];
 
     final matchedUser = dummyUsers.firstWhere(
