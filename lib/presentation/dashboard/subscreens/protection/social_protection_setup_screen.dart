@@ -29,6 +29,23 @@ class _SocialProtectionSetupScreenState
       isProtecting = true;
     });
 
+    if (twitterController.text.isEmpty &&
+        instagramController.text.isEmpty &&
+        tiktokController.text.isEmpty &&
+        snapchatController.text.isEmpty) {
+      setState(() {
+        isProtecting = false;
+      });
+      Get.snackbar('Error', 'Please fill all fields');
+      return;
+    }
+
+    // [SAVING ALL THE SOCIAL MEDIA HANDLERS INTO LOCAL STORAGE]
+    await ServiceRegistry.localStorage.write('twitter', twitterController.text);
+    await ServiceRegistry.localStorage.write('instagram', instagramController.text);
+    await ServiceRegistry.localStorage.write('tiktok', tiktokController.text);
+    await ServiceRegistry.localStorage.write('snapchat', snapchatController.text);
+
     // Simulate AI Protection Sequence
     final steps = [
       'Connecting to Social Accounts...',

@@ -81,7 +81,7 @@ class _CustomBottomNavigationBarState extends State<CustomBottomNavigationBar> {
               size: 20,
               color: AppColors.electricLilac,
             ),
-            label: 'Protection',
+            label: 'Safe AI',
           ),
           NavigationDestination(
             icon: const Icon(
