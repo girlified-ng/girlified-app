@@ -1058,4 +1058,66 @@ class AccountService extends GetxController {
       }
     });
   }
+
+  //! UPDATE ACCOUNT SOCIAL HANDLES
+  /// Update account social handles.
+  ///
+  /// [METHOD] - POST
+  ///
+  /// [ROUTE] - /account/me/update-social-handles
+  ///
+  /// [IS-AUTHENTICATED]
+  Future<void> updateAccountSocialHandlesService(
+      UpdateSocialHandlesDTO payload) async {
+    return authGuard<void>(() async {
+      if (ServiceRegistry.localStorage
+              .read(LocalStorageSecrets.authenticationMethod) ==
+          'GUEST') {
+        return;
+      }
+
+      try {
+        log("[UPDATE-ACCOUNT-SOCIAL-HANDLES-INFO-PENDING]");
+
+        isUpdateAccountInfoProcessing.value = true;
+
+        ProtectionApi protectionApi =
+            ServiceRegistry.accountSdk.getProtectionApi();
+
+        Dio.Response response =
+            await protectionApi.accountControllerUpdateSocialHandles(
+          updateSocialHandlesDTO: payload,
+          headers: {
+            "Authorization": ServiceRegistry.localStorage.read(
+              LocalStorageSecrets.accessToken,
+            ),
+          },
+        );
+
+        if (response.statusCode == 200) {
+          // log('[UPDATE-ACCOUNT-SOCIAL-HANDLES-INFO-RESPONSE] :: ${response.data}');
+
+          AccountInfo accountInfo = response.data;
+
+          ServiceRegistry.userRepository.accountInfo.value = accountInfo;
+
+          log("[UPDATE-ACCOUNT-SOCIAL-HANDLES-INFO-SUCCESS]");
+
+          isUpdateAccountInfoProcessing.value = false;
+        }
+      } catch (error) {
+        isUpdateAccountInfoProcessing.value = false;
+
+        log('[UPDATE-ACCOUNT-SOCIAL-HANDLES-INFO-ERROR-RESPONSE] :: $error');
+
+        if (error is Dio.DioException) {
+          Dio.DioException dioError = error;
+
+          log('[UPDATE-ACCOUNT-SOCIAL-HANDLES-INFO-DIO-ERROR-RESPONSE] :: ${dioError.response}');
+        }
+      } finally {
+        isUpdateAccountInfoProcessing.value = false;
+      }
+    });
+  }
 }

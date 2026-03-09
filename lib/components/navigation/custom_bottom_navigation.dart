@@ -56,14 +56,14 @@ class _CustomBottomNavigationBarState extends State<CustomBottomNavigationBar> {
             ServiceRegistry.commonRepository.currentScreenIndex.value,
         surfaceTintColor: AppColors.whiteColor,
         labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-        destinations: [
+        destinations: const [
           NavigationDestination(
-            icon: const Icon(
+            icon: Icon(
               FluentIcons.shield_checkmark_16_regular,
               size: 20,
               color: AppColors.textTertiaryInverseColor,
             ),
-            selectedIcon: const Icon(
+            selectedIcon: Icon(
               FluentIcons.shopping_bag_16_regular,
               size: 20,
               color: AppColors.electricLilac,
@@ -71,12 +71,12 @@ class _CustomBottomNavigationBarState extends State<CustomBottomNavigationBar> {
             label: 'Orders',
           ),
           NavigationDestination(
-            icon: const Icon(
+            icon: Icon(
               FluentIcons.shield_checkmark_16_regular,
               size: 20,
               color: AppColors.textTertiaryInverseColor,
             ),
-            selectedIcon: const Icon(
+            selectedIcon: Icon(
               FluentIcons.shield_checkmark_16_filled,
               size: 20,
               color: AppColors.electricLilac,
@@ -84,12 +84,12 @@ class _CustomBottomNavigationBarState extends State<CustomBottomNavigationBar> {
             label: 'Safe AI',
           ),
           NavigationDestination(
-            icon: const Icon(
+            icon: Icon(
               FluentIcons.history_16_regular,
               size: 20,
               color: AppColors.textTertiaryInverseColor,
             ),
-            selectedIcon: const Icon(
+            selectedIcon: Icon(
               FluentIcons.history_16_filled,
               size: 20,
               color: AppColors.electricLilac,
@@ -97,12 +97,12 @@ class _CustomBottomNavigationBarState extends State<CustomBottomNavigationBar> {
             label: 'Activity',
           ),
           NavigationDestination(
-            icon: const Icon(
+            icon: Icon(
               FluentIcons.person_16_regular,
               size: 20,
               color: AppColors.textTertiaryInverseColor,
             ),
-            selectedIcon: const Icon(
+            selectedIcon: Icon(
               FluentIcons.person_16_filled,
               size: 20,
               color: AppColors.electricLilac,

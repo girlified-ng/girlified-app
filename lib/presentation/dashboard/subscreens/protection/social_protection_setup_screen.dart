@@ -5,6 +5,7 @@ import 'package:girlified/core/constants/colors.dart';
 import 'package:girlified/core/constants/routes.dart';
 import 'package:girlified/core/providers/index.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
+import 'package:girlified/data/infra_sdk/account/lib/account_sdk.dart';
 
 class SocialProtectionSetupScreen extends StatefulWidget {
   const SocialProtectionSetupScreen({super.key});
@@ -25,10 +26,6 @@ class _SocialProtectionSetupScreenState
   String processingStatus = '';
 
   Future<void> _handleProtect() async {
-    setState(() {
-      isProtecting = true;
-    });
-
     if (twitterController.text.isEmpty &&
         instagramController.text.isEmpty &&
         tiktokController.text.isEmpty &&
@@ -40,11 +37,17 @@ class _SocialProtectionSetupScreenState
       return;
     }
 
+    setState(() {
+      isProtecting = true;
+    });
+
     // [SAVING ALL THE SOCIAL MEDIA HANDLERS INTO LOCAL STORAGE]
-    await ServiceRegistry.localStorage.write('twitter', twitterController.text);
-    await ServiceRegistry.localStorage.write('instagram', instagramController.text);
-    await ServiceRegistry.localStorage.write('tiktok', tiktokController.text);
-    await ServiceRegistry.localStorage.write('snapchat', snapchatController.text);
+    await ServiceRegistry.accountService
+        .updateAccountSocialHandlesService(UpdateSocialHandlesDTO((b) => b
+          ..xHandle = twitterController.text
+          ..instagramHandle = instagramController.text
+          ..tiktokHandle = tiktokController.text
+          ..snapchatHandle = snapchatController.text));
 
     // Simulate AI Protection Sequence
     final steps = [
@@ -69,6 +72,7 @@ class _SocialProtectionSetupScreenState
     await ServiceRegistry.localStorage.write('scan_count', 1450);
 
     if (!mounted) return;
+    
     Get.offAllNamed(AppRoutes.dashboardRoute);
   }
 

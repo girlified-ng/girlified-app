@@ -9,6 +9,7 @@ import 'package:girlified/presentation/dashboard/protection_dashboard_screen.dar
 import 'package:girlified/presentation/dashboard/activity_screen.dart';
 import 'package:girlified/presentation/dashboard/settings_screen.dart';
 import 'package:girlified/presentation/dashboard/subscreens/account/account_screen.dart';
+import 'package:girlified/presentation/dashboard/subscreens/protection/social_protection_setup_screen.dart';
 
 class Dashboard extends StatefulWidget {
   const Dashboard({super.key});
@@ -25,8 +26,10 @@ class _DashboardState extends State<Dashboard> {
   void initializeAppInfo() {}
 
   final List<Widget> screens = [
+    
     const OrdersScreen(),
-    const ProtectionDashboardScreen(),
+    // const ProtectionDashboardScreen(),
+    const SocialProtectionSetupScreen(),
     const ActivityScreen(),
     const AccountScreen(),
   ];
