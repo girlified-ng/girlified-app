@@ -31,20 +31,39 @@ class AppColors {
   static const Color secondaryTextColor = Color(0xFF007AFF);
   static const Color primaryBackgroundColor = Color(0xFF1b4332);
 
+  // Girlified BRANDING COLORS
+  static const Color electricLilac = Color(0xFF8B5CF6); // Primary brand color
+  static const Color tealColor = Color(0xFF14B8A6); // Secondary brand color
+  static const Color darkBackground = Color(0xFF1A1625); // Dark mode background
+  static const Color cardBackground =
+      Color(0xFF2D2640); // Card background for dark mode
+
   // LIGHT THEME
-  static const Color primaryColor = Color(0xFF93068A);
-  static const Color primaryLightColor = Color(0xFF853080);
+  static const Color primaryColor = Color(0xFF8B5CF6); // Electric Lilac
+  static const Color primaryLightColor = Color(0xFFA78BFA); // Lighter lilac
   static const Color backgroundColor = Color(0xFFffffff);
   static const Color appBarBackgroundColor = Color(0xFFffffff);
-  static const Color buttonPrimaryColor = Color(0xFF93068A);
-  static const Color buttonPrimaryDisabledColor = Color(0xFF853080);
+  static const Color buttonPrimaryColor = Color(0xFF8B5CF6);
+  static const Color buttonPrimaryDisabledColor = Color(0xFFA78BFA);
   static const Color textColor = Color(0xFF1A1A1A);
 
-  // DARK THEME
-  static const Color darkThemePrimaryColor = Color(0xFF111113);
-  static const Color darkThemeBackgroundColor = Color.fromARGB(255, 67, 67, 67);
-  static const Color darkThemeAppBarBackgroundColor = Color(0xFFffffff);
-  static const Color darkThemeButtonPrimaryColor = Color(0xFF007AFF);
-  static const Color darkThemeButtonPrimaryDisabledColor = Color(0xFFB3D7FF);
+  // DARK THEME (Default for Girlified)
+  static const Color darkThemePrimaryColor =
+      Color(0xFF8B5CF6); // Electric Lilac
+  static const Color darkThemeBackgroundColor =
+      Color(0xFF1A1625); // Dark background
+  static const Color darkThemeAppBarBackgroundColor = Color(0xFF2D2640);
+  static const Color darkThemeButtonPrimaryColor = Color(0xFF8B5CF6);
+  static const Color darkThemeButtonPrimaryDisabledColor = Color(0xFF6D28D9);
   static const Color darkThemeTextColor = Color(0xFFffffff);
+
+  // Girlified SPECIFIC COLORS
+  static const Color protectionActiveColor =
+      Color(0xFF14B8A6); // Teal for active protection
+  static const Color protectionInactiveColor =
+      Color(0xFF6B7280); // Gray for inactive
+  static const Color dangerPrimaryColor =
+      Color(0xFFEF4444); // Red for harmful content
+  static const Color safeContentColor =
+      Color(0xFF10B981); // Green for safe content
 }

@@ -1,5 +1,15 @@
 # Uncomment this line to define a global platform for your project
-# platform :ios, '12.0'
+# platform :ios, '13.0'
+# platform :ios, '18.0'
+platform :ios, '15.0'
+
+# Add this line here
+use_modular_headers!
+
+# pod 'Firebase', '11.2.0'
+# pod 'FirebaseCore', '11.2.0'
+# Add this line if it's not already there
+pod 'GoogleMaps'
 
 # CocoaPods analytics sends network stats synchronously affecting flutter build latency.
 ENV['COCOAPODS_DISABLE_STATS'] = 'true'

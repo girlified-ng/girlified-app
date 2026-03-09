@@ -1,18 +1,14 @@
 // ignore_for_file: use_build_context_synchronously
-import 'dart:developer';
-import 'package:flutter_localization/flutter_localization.dart';
 import 'package:get/get.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:girlified/core/providers/index.dart';
 import 'package:girlified/core/constants/routes.dart';
 import 'package:girlified/core/constants/secrets.dart';
-import 'package:girlified/presentation/dashboard/home_screen.dart';
-import 'package:girlified/presentation/dashboard/scan_screen.dart';
-import 'package:girlified/presentation/dashboard/cycle_screen.dart';
-import 'package:girlified/components/snackbars/custom_snackbar.dart';
-import 'package:girlified/presentation/dashboard/profile_screen.dart';
-import 'package:girlified/presentation/dashboard/results_screen.dart';
+import 'package:girlified/presentation/dashboard/orders_screen.dart';
+import 'package:girlified/presentation/dashboard/protection_dashboard_screen.dart';
+import 'package:girlified/presentation/dashboard/activity_screen.dart';
+import 'package:girlified/presentation/dashboard/settings_screen.dart';
+import 'package:girlified/presentation/dashboard/subscreens/account/account_screen.dart';
 
 class Dashboard extends StatefulWidget {
   const Dashboard({super.key});
@@ -29,11 +25,10 @@ class _DashboardState extends State<Dashboard> {
   void initializeAppInfo() {}
 
   final List<Widget> screens = [
-    const HomeScreen(),
-    const CycleScreen(),
-    const ScanScreen(),
-    const ResultsScreen(),
-    const ProfileScreen(),
+    const OrdersScreen(),
+    const ProtectionDashboardScreen(),
+    const ActivityScreen(),
+    const AccountScreen(),
   ];
 
   void initializeDashboardAuth() async {

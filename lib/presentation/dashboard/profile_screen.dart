@@ -612,7 +612,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             // Sign Out Button
             InkWell(
               onTap: () {
-                authController.logout();
+                // authController.logout();
                 // TODO: Implement sign out
               },
               child: Container(

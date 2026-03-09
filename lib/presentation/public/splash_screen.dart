@@ -15,21 +15,29 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
+  void initializeAppInfo() async {
+    await Future.delayed(const Duration(milliseconds: 2500));
+
+    ServiceRegistry.engagementService.fetchTestimonialsService();
+  }
+
   void initializeTimeOut() async {
-    await Future.delayed(const Duration(milliseconds: 1500));
+    await Future.delayed(const Duration(milliseconds: 4500));
 
     if (ServiceRegistry.localStorage.read(LocalStorageSecrets.accessToken) !=
         null) {
       ServiceRegistry.commonRepository.currentScreenIndex.value = 0;
 
-      // Get.toNamed(AppRoutes.dashboardRoute);
+      Get.toNamed(AppRoutes.dashboardRoute);
     } else {
-      Get.toNamed(AppRoutes.loginRoute);
+      Get.toNamed(AppRoutes.onboardingRoute);
     }
   }
 
   @override
   void initState() {
+    initializeAppInfo();
+
     initializeTimeOut();
 
     super.initState();
@@ -55,8 +63,8 @@ class _SplashScreenState extends State<SplashScreen> {
                   ),
                 ],
                 child: Image.asset(
-                  'assets/icons/icon_logo_cliff.png',
-                  width: 140,
+                  'assets/icons/icon_logo.png',
+                  width: 40,
                 ),
               ),
             ],

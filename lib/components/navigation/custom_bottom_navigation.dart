@@ -1,5 +1,4 @@
 // ignore_for_file: deprecated_member_use
-import 'package:flutter_localization/flutter_localization.dart';
 import 'package:get/get.dart';
 import 'package:flutter/material.dart';
 import 'package:girlified/core/providers/index.dart';
@@ -39,7 +38,7 @@ class _CustomBottomNavigationBarState extends State<CustomBottomNavigationBar> {
               textStyle = textStyle.copyWith(
                 fontSize: 11,
                 fontWeight: FontWeight.w500,
-                color: AppColors.primaryBackgroundColor,
+                color: AppColors.electricLilac,
               );
             }
 
@@ -50,7 +49,8 @@ class _CustomBottomNavigationBarState extends State<CustomBottomNavigationBar> {
       child: NavigationBar(
         height: 60,
         onDestinationSelected: widget.onTap,
-        indicatorColor: AppColors.buttonPrimaryDisabledColor.withOpacity(0.4),
+        indicatorColor: AppColors.electricLilac.withOpacity(0.2),
+        // backgroundColor: AppColors.darkThemeAppBarBackgroundColor,
         animationDuration: const Duration(seconds: 0),
         selectedIndex:
             ServiceRegistry.commonRepository.currentScreenIndex.value,
@@ -59,66 +59,53 @@ class _CustomBottomNavigationBarState extends State<CustomBottomNavigationBar> {
         destinations: [
           NavigationDestination(
             icon: const Icon(
-              FluentIcons.home_12_regular,
+              FluentIcons.shield_checkmark_16_regular,
               size: 20,
               color: AppColors.textTertiaryInverseColor,
             ),
             selectedIcon: const Icon(
-              FluentIcons.home_12_regular,
+              FluentIcons.shopping_bag_16_regular,
               size: 20,
-              color: AppColors.primaryBackgroundColor,
+              color: AppColors.electricLilac,
             ),
-            label: 'Home',
+            label: 'Orders',
           ),
           NavigationDestination(
             icon: const Icon(
-              FluentIcons.calendar_ltr_12_regular,
+              FluentIcons.shield_checkmark_16_regular,
               size: 20,
               color: AppColors.textTertiaryInverseColor,
             ),
             selectedIcon: const Icon(
-              FluentIcons.calendar_ltr_12_regular,
+              FluentIcons.shield_checkmark_16_filled,
               size: 20,
-              color: AppColors.primaryBackgroundColor,
+              color: AppColors.electricLilac,
             ),
-            label: 'Cycle',
+            label: 'Protection',
           ),
           NavigationDestination(
             icon: const Icon(
-              FluentIcons.camera_16_regular,
+              FluentIcons.history_16_regular,
               size: 20,
               color: AppColors.textTertiaryInverseColor,
             ),
             selectedIcon: const Icon(
-              FluentIcons.camera_16_regular,
+              FluentIcons.history_16_filled,
               size: 20,
-              color: AppColors.primaryBackgroundColor,
+              color: AppColors.electricLilac,
             ),
-            label: 'Scan',
+            label: 'Activity',
           ),
           NavigationDestination(
             icon: const Icon(
-              FluentIcons.arrow_trending_12_regular,
+              FluentIcons.person_16_regular,
               size: 20,
               color: AppColors.textTertiaryInverseColor,
             ),
             selectedIcon: const Icon(
-              FluentIcons.arrow_trending_12_regular,
+              FluentIcons.person_16_filled,
               size: 20,
-              color: AppColors.primaryBackgroundColor,
-            ),
-            label: 'Results',
-          ),
-          NavigationDestination(
-            icon: const Icon(
-              FluentIcons.person_12_regular,
-              size: 20,
-              color: AppColors.textTertiaryInverseColor,
-            ),
-            selectedIcon: const Icon(
-              FluentIcons.person_12_regular,
-              size: 20,
-              color: AppColors.primaryBackgroundColor,
+              color: AppColors.electricLilac,
             ),
             label: 'Profile',
           ),

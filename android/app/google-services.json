@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "167071148668",
+    "project_id": "girlified-98aa8",
+    "storage_bucket": "girlified-98aa8.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:167071148668:android:557cf082a1bcde958277f9",
+        "android_client_info": {
+          "package_name": "com.girlified.girlified"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAUy4MEGQis5vadmFAqDpUtcZpsXOJzFys"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
