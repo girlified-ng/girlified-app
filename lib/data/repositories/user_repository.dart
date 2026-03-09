@@ -1,7 +1,6 @@
 // ignore_for_file: library_prefixes
 import 'package:get/get.dart';
-import 'package:account_sdk/account_sdk.dart'
-    as AccountSdk;
+import 'package:account_sdk/account_sdk.dart' as AccountSdk;
 import 'package:engagement_sdk/src/model/testimonial_info.dart'
     as EngagementSdk;
 
@@ -20,7 +19,11 @@ class UserRepository extends GetxController {
       ..profilePhoto =
           'https://medexer.s3.eu-north-1.amazonaws.com/avatars/avatar.png'
       ..fcmToken = ''
-      ..referralCode = '',
+      ..referralCode = ''
+      ..xHandle = ''
+      ..instagramHandle = ''
+      ..tiktokHandle = ''
+      ..snapchatHandle = '',
   ).obs;
 
   final RxList<EngagementSdk.TestimonialInfo> _testimonials =

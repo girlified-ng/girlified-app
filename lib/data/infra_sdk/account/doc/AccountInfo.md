@@ -20,6 +20,10 @@ Name | Type | Description | Notes
 **status** | **String** |  | 
 **fcmToken** | **String** |  | 
 **referralCode** | **String** |  | 
+**xHandle** | **String** |  | 
+**instagramHandle** | **String** |  | 
+**tiktokHandle** | **String** |  | 
+**snapchatHandle** | **String** |  | 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

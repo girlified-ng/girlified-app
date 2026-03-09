@@ -1,5 +1,4 @@
 // @dart=3.5
-// @dart=3.5
 //
 // AUTO-GENERATED FILE, DO NOT MODIFY!
 //
@@ -26,6 +25,10 @@ part 'account_info.g.dart';
 /// * [status] 
 /// * [fcmToken] 
 /// * [referralCode] 
+/// * [xHandle] 
+/// * [instagramHandle] 
+/// * [tiktokHandle] 
+/// * [snapchatHandle] 
 @BuiltValue()
 abstract class AccountInfo implements Built<AccountInfo, AccountInfoBuilder> {
   @BuiltValueField(wireName: r'id')
@@ -65,6 +68,18 @@ abstract class AccountInfo implements Built<AccountInfo, AccountInfoBuilder> {
 
   @BuiltValueField(wireName: r'referralCode')
   String get referralCode;
+
+  @BuiltValueField(wireName: r'xHandle')
+  String get xHandle;
+
+  @BuiltValueField(wireName: r'instagramHandle')
+  String get instagramHandle;
+
+  @BuiltValueField(wireName: r'tiktokHandle')
+  String get tiktokHandle;
+
+  @BuiltValueField(wireName: r'snapchatHandle')
+  String get snapchatHandle;
 
   AccountInfo._();
 
@@ -147,6 +162,26 @@ class _$AccountInfoSerializer implements PrimitiveSerializer<AccountInfo> {
     yield r'referralCode';
     yield serializers.serialize(
       object.referralCode,
+      specifiedType: const FullType(String),
+    );
+    yield r'xHandle';
+    yield serializers.serialize(
+      object.xHandle,
+      specifiedType: const FullType(String),
+    );
+    yield r'instagramHandle';
+    yield serializers.serialize(
+      object.instagramHandle,
+      specifiedType: const FullType(String),
+    );
+    yield r'tiktokHandle';
+    yield serializers.serialize(
+      object.tiktokHandle,
+      specifiedType: const FullType(String),
+    );
+    yield r'snapchatHandle';
+    yield serializers.serialize(
+      object.snapchatHandle,
       specifiedType: const FullType(String),
     );
   }
@@ -255,6 +290,34 @@ class _$AccountInfoSerializer implements PrimitiveSerializer<AccountInfo> {
             specifiedType: const FullType(String),
           ) as String;
           result.referralCode = valueDes;
+          break;
+        case r'xHandle':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(String),
+          ) as String;
+          result.xHandle = valueDes;
+          break;
+        case r'instagramHandle':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(String),
+          ) as String;
+          result.instagramHandle = valueDes;
+          break;
+        case r'tiktokHandle':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(String),
+          ) as String;
+          result.tiktokHandle = valueDes;
+          break;
+        case r'snapchatHandle':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(String),
+          ) as String;
+          result.snapchatHandle = valueDes;
           break;
         default:
           unhandled.add(key);

@@ -1,5 +1,4 @@
 // @dart=3.5
-// @dart=3.5
 //
 // AUTO-GENERATED FILE, DO NOT MODIFY!
 //
@@ -17,6 +16,7 @@ export 'package:account_sdk/src/api/me_api.dart';
 export 'package:account_sdk/src/api/monthly_survey_api.dart';
 export 'package:account_sdk/src/api/notifications_api.dart';
 export 'package:account_sdk/src/api/order_api.dart';
+export 'package:account_sdk/src/api/protection_api.dart';
 export 'package:account_sdk/src/api/support_api.dart';
 export 'package:account_sdk/src/api/upload_api.dart';
 
@@ -40,5 +40,6 @@ export 'package:account_sdk/src/model/update_account_password_dto.dart';
 export 'package:account_sdk/src/model/update_account_phone_dto.dart';
 export 'package:account_sdk/src/model/update_fcm_token_dto.dart';
 export 'package:account_sdk/src/model/update_profile_image_dto.dart';
+export 'package:account_sdk/src/model/update_social_handles_dto.dart';
 export 'package:account_sdk/src/model/verify_new_account_email_dto.dart';
 

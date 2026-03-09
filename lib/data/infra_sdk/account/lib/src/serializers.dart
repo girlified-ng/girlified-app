@@ -1,5 +1,4 @@
 // @dart=3.5
-// @dart=3.5
 //
 // AUTO-GENERATED FILE, DO NOT MODIFY!
 //
@@ -36,6 +35,7 @@ import 'package:account_sdk/src/model/update_account_password_dto.dart';
 import 'package:account_sdk/src/model/update_account_phone_dto.dart';
 import 'package:account_sdk/src/model/update_fcm_token_dto.dart';
 import 'package:account_sdk/src/model/update_profile_image_dto.dart';
+import 'package:account_sdk/src/model/update_social_handles_dto.dart';
 import 'package:account_sdk/src/model/verify_new_account_email_dto.dart';
 
 part 'serializers.g.dart';
@@ -61,6 +61,7 @@ part 'serializers.g.dart';
   UpdateAccountPhoneDTO,
   UpdateFCMTokenDTO,
   UpdateProfileImageDTO,
+  UpdateSocialHandlesDTO,
   VerifyNewAccountEmailDTO,
 ])
 Serializers serializers = (_$serializers.toBuilder()

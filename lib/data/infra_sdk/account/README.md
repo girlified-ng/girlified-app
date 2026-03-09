@@ -80,6 +80,7 @@ Class | Method | HTTP request | Description
 [*NotificationsApi*](doc/NotificationsApi.md) | [**accountNotificationControllerReadNotification**](doc/NotificationsApi.md#accountnotificationcontrollerreadnotification) | **PATCH** /v1/account/notifications/read | 
 [*OrderApi*](doc/OrderApi.md) | [**orderControllerFetchSanitaryPadOrderHistory**](doc/OrderApi.md#ordercontrollerfetchsanitarypadorderhistory) | **GET** /v1/account/order/sanitary-pad/history | 
 [*OrderApi*](doc/OrderApi.md) | [**orderControllerOrderSanitaryPad**](doc/OrderApi.md#ordercontrollerordersanitarypad) | **POST** /v1/account/order/sanitary-pad/new | 
+[*ProtectionApi*](doc/ProtectionApi.md) | [**accountControllerUpdateSocialHandles**](doc/ProtectionApi.md#accountcontrollerupdatesocialhandles) | **PATCH** /v1/account/me/update-social-handles | 
 [*SupportApi*](doc/SupportApi.md) | [**supportControllerContactUs**](doc/SupportApi.md#supportcontrollercontactus) | **POST** /v1/account/support/contact-us | 
 [*UploadApi*](doc/UploadApi.md) | [**imageUploadControllerUploadFile**](doc/UploadApi.md#imageuploadcontrolleruploadfile) | **POST** /v1/account/upload/file | Upload an file
 [*UploadApi*](doc/UploadApi.md) | [**imageUploadControllerUploadImage**](doc/UploadApi.md#imageuploadcontrolleruploadimage) | **POST** /v1/account/upload/image | Upload an image with optional resizing
@@ -107,6 +108,7 @@ Class | Method | HTTP request | Description
  - [UpdateAccountPhoneDTO](doc/UpdateAccountPhoneDTO.md)
  - [UpdateFCMTokenDTO](doc/UpdateFCMTokenDTO.md)
  - [UpdateProfileImageDTO](doc/UpdateProfileImageDTO.md)
+ - [UpdateSocialHandlesDTO](doc/UpdateSocialHandlesDTO.md)
  - [VerifyNewAccountEmailDTO](doc/VerifyNewAccountEmailDTO.md)
 
 

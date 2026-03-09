@@ -1,6 +1,3 @@
-// @dart=3.5
-// @dart=3.5
-// @dart=3.5
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // @dart=3.5
 
@@ -35,6 +32,7 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..add(UpdateAccountPhoneDTO.serializer)
       ..add(UpdateFCMTokenDTO.serializer)
       ..add(UpdateProfileImageDTO.serializer)
+      ..add(UpdateSocialHandlesDTO.serializer)
       ..add(VerifyNewAccountEmailDTO.serializer)
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(MonthlySurveyInfo)]),

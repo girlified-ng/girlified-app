@@ -1,5 +1,4 @@
 // @dart=3.5
-// @dart=3.5
 //
 // AUTO-GENERATED FILE, DO NOT MODIFY!
 //
@@ -16,6 +15,7 @@ import 'package:account_sdk/src/api/me_api.dart';
 import 'package:account_sdk/src/api/monthly_survey_api.dart';
 import 'package:account_sdk/src/api/notifications_api.dart';
 import 'package:account_sdk/src/api/order_api.dart';
+import 'package:account_sdk/src/api/protection_api.dart';
 import 'package:account_sdk/src/api/support_api.dart';
 import 'package:account_sdk/src/api/upload_api.dart';
 
@@ -101,6 +101,12 @@ class AccountSdk {
   /// by doing that all interceptors will not be executed
   OrderApi getOrderApi() {
     return OrderApi(dio, serializers);
+  }
+
+  /// Get ProtectionApi instance, base route and serializer can be overridden by a given but be careful,
+  /// by doing that all interceptors will not be executed
+  ProtectionApi getProtectionApi() {
+    return ProtectionApi(dio, serializers);
   }
 
   /// Get SupportApi instance, base route and serializer can be overridden by a given but be careful,

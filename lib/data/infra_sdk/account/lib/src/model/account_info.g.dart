@@ -1,6 +1,3 @@
-// @dart=3.5
-// @dart=3.5
-// @dart=3.5
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // @dart=3.5
 
@@ -176,6 +173,14 @@ class _$AccountInfo extends AccountInfo {
   final String fcmToken;
   @override
   final String referralCode;
+  @override
+  final String xHandle;
+  @override
+  final String instagramHandle;
+  @override
+  final String tiktokHandle;
+  @override
+  final String snapchatHandle;
 
   factory _$AccountInfo([void Function(AccountInfoBuilder)? updates]) =>
       (AccountInfoBuilder()..update(updates))._build();
@@ -192,7 +197,11 @@ class _$AccountInfo extends AccountInfo {
       required this.accountType,
       required this.status,
       required this.fcmToken,
-      required this.referralCode})
+      required this.referralCode,
+      required this.xHandle,
+      required this.instagramHandle,
+      required this.tiktokHandle,
+      required this.snapchatHandle})
       : super._();
   @override
   AccountInfo rebuild(void Function(AccountInfoBuilder) updates) =>
@@ -216,7 +225,11 @@ class _$AccountInfo extends AccountInfo {
         accountType == other.accountType &&
         status == other.status &&
         fcmToken == other.fcmToken &&
-        referralCode == other.referralCode;
+        referralCode == other.referralCode &&
+        xHandle == other.xHandle &&
+        instagramHandle == other.instagramHandle &&
+        tiktokHandle == other.tiktokHandle &&
+        snapchatHandle == other.snapchatHandle;
   }
 
   @override
@@ -234,6 +247,10 @@ class _$AccountInfo extends AccountInfo {
     _$hash = $jc(_$hash, status.hashCode);
     _$hash = $jc(_$hash, fcmToken.hashCode);
     _$hash = $jc(_$hash, referralCode.hashCode);
+    _$hash = $jc(_$hash, xHandle.hashCode);
+    _$hash = $jc(_$hash, instagramHandle.hashCode);
+    _$hash = $jc(_$hash, tiktokHandle.hashCode);
+    _$hash = $jc(_$hash, snapchatHandle.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
   }
@@ -252,7 +269,11 @@ class _$AccountInfo extends AccountInfo {
           ..add('accountType', accountType)
           ..add('status', status)
           ..add('fcmToken', fcmToken)
-          ..add('referralCode', referralCode))
+          ..add('referralCode', referralCode)
+          ..add('xHandle', xHandle)
+          ..add('instagramHandle', instagramHandle)
+          ..add('tiktokHandle', tiktokHandle)
+          ..add('snapchatHandle', snapchatHandle))
         .toString();
   }
 }
@@ -309,6 +330,24 @@ class AccountInfoBuilder implements Builder<AccountInfo, AccountInfoBuilder> {
   String? get referralCode => _$this._referralCode;
   set referralCode(String? referralCode) => _$this._referralCode = referralCode;
 
+  String? _xHandle;
+  String? get xHandle => _$this._xHandle;
+  set xHandle(String? xHandle) => _$this._xHandle = xHandle;
+
+  String? _instagramHandle;
+  String? get instagramHandle => _$this._instagramHandle;
+  set instagramHandle(String? instagramHandle) =>
+      _$this._instagramHandle = instagramHandle;
+
+  String? _tiktokHandle;
+  String? get tiktokHandle => _$this._tiktokHandle;
+  set tiktokHandle(String? tiktokHandle) => _$this._tiktokHandle = tiktokHandle;
+
+  String? _snapchatHandle;
+  String? get snapchatHandle => _$this._snapchatHandle;
+  set snapchatHandle(String? snapchatHandle) =>
+      _$this._snapchatHandle = snapchatHandle;
+
   AccountInfoBuilder() {
     AccountInfo._defaults(this);
   }
@@ -328,6 +367,10 @@ class AccountInfoBuilder implements Builder<AccountInfo, AccountInfoBuilder> {
       _status = $v.status;
       _fcmToken = $v.fcmToken;
       _referralCode = $v.referralCode;
+      _xHandle = $v.xHandle;
+      _instagramHandle = $v.instagramHandle;
+      _tiktokHandle = $v.tiktokHandle;
+      _snapchatHandle = $v.snapchatHandle;
       _$v = null;
     }
     return this;
@@ -372,6 +415,14 @@ class AccountInfoBuilder implements Builder<AccountInfo, AccountInfoBuilder> {
               fcmToken, r'AccountInfo', 'fcmToken'),
           referralCode: BuiltValueNullFieldError.checkNotNull(
               referralCode, r'AccountInfo', 'referralCode'),
+          xHandle: BuiltValueNullFieldError.checkNotNull(
+              xHandle, r'AccountInfo', 'xHandle'),
+          instagramHandle: BuiltValueNullFieldError.checkNotNull(
+              instagramHandle, r'AccountInfo', 'instagramHandle'),
+          tiktokHandle: BuiltValueNullFieldError.checkNotNull(
+              tiktokHandle, r'AccountInfo', 'tiktokHandle'),
+          snapchatHandle: BuiltValueNullFieldError.checkNotNull(
+              snapchatHandle, r'AccountInfo', 'snapchatHandle'),
         );
     replace(_$result);
     return _$result;
