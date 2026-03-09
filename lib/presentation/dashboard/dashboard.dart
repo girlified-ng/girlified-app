@@ -7,7 +7,6 @@ import 'package:girlified/core/constants/secrets.dart';
 import 'package:girlified/presentation/dashboard/orders_screen.dart';
 import 'package:girlified/presentation/dashboard/protection_dashboard_screen.dart';
 import 'package:girlified/presentation/dashboard/activity_screen.dart';
-import 'package:girlified/presentation/dashboard/settings_screen.dart';
 import 'package:girlified/presentation/dashboard/subscreens/account/account_screen.dart';
 import 'package:girlified/presentation/dashboard/subscreens/protection/social_protection_setup_screen.dart';
 
@@ -25,14 +24,13 @@ class _DashboardState extends State<Dashboard> {
 
   void initializeAppInfo() {}
 
-  final List<Widget> screens = [
-    
-    const OrdersScreen(),
-    // const ProtectionDashboardScreen(),
-    const SocialProtectionSetupScreen(),
-    const ActivityScreen(),
-    const AccountScreen(),
-  ];
+  // final List<Widget> screens = [
+  //   const OrdersScreen(),
+  //   // const ProtectionDashboardScreen(),
+  //   const SocialProtectionSetupScreen(),
+  //   const ActivityScreen(),
+  //   const AccountScreen(),
+  // ];
 
   void initializeDashboardAuth() async {
     await Future.delayed(const Duration(milliseconds: 80));
@@ -62,6 +60,22 @@ class _DashboardState extends State<Dashboard> {
   @override
   Widget build(BuildContext context) {
     return Obx(() {
+      final account = ServiceRegistry.userRepository.accountInfo.value;
+
+      final bool isEmptyHandlers = account.snapchatHandle.isEmpty &&
+          account.instagramHandle.isEmpty &&
+          account.tiktokHandle.isEmpty &&
+          account.instagramHandle.isEmpty;
+
+      final List<Widget> screens = [
+        const OrdersScreen(),
+        isEmptyHandlers
+            ? const SocialProtectionSetupScreen()
+            : const ProtectionDashboardScreen(),
+        const ActivityScreen(),
+        const AccountScreen()
+      ];
+
       return WillPopScope(
         onWillPop: () async {
           return false;
