@@ -14,7 +14,7 @@ class GirlifiedIconBadge extends StatelessWidget {
       height: size,
       padding: const EdgeInsets.all(5),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(15),
         border: Border.all(
             color: AppColors.grayLightColor.withValues(alpha: opacity)),
       ),

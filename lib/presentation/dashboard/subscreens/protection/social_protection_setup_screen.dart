@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:get/get.dart';
+import 'package:girlified/components/snackbars/custom_snackbar.dart';
 import 'package:girlified/core/constants/colors.dart';
 import 'package:girlified/core/constants/routes.dart';
 import 'package:girlified/core/providers/index.dart';
@@ -25,6 +26,26 @@ class _SocialProtectionSetupScreenState
   bool isProtecting = false;
   String processingStatus = '';
 
+  void initializeControllers() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      twitterController.text =
+          ServiceRegistry.userRepository.accountInfo.value.xHandle;
+      instagramController.text =
+          ServiceRegistry.userRepository.accountInfo.value.instagramHandle;
+      tiktokController.text =
+          ServiceRegistry.userRepository.accountInfo.value.tiktokHandle;
+      snapchatController.text =
+          ServiceRegistry.userRepository.accountInfo.value.snapchatHandle;
+    });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+
+    initializeControllers();
+  }
+
   Future<void> _handleProtect() async {
     if (twitterController.text.isEmpty ||
         instagramController.text.isEmpty ||
@@ -33,10 +54,11 @@ class _SocialProtectionSetupScreenState
       setState(() {
         isProtecting = false;
       });
-      Get.snackbar('Error', 'Please fill all fields',
-          backgroundColor: AppColors.dangerColor.withOpacity(0.8),
-          colorText: AppColors.whiteColor);
-      return;
+
+      return customErrorMessageSnackbar(
+        title: 'Message',
+        message: 'Please fill all fields',
+      );
     }
 
     setState(() {

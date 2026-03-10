@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:girlified/components/navigation/custom_bottom_navigation.dart';
+import 'package:girlified/components/skeletons/insecure_dashboard_content.dart';
+import 'package:girlified/core/constants/secrets.dart';
 import 'package:girlified/core/providers/index.dart';
 import 'package:girlified/core/utilities/index.dart';
 import 'package:girlified/core/constants/sizes.dart';
@@ -28,9 +30,15 @@ class _AccountScreenState extends State<AccountScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.backgroundColor,
-      appBar: const PreferredSize(
-        preferredSize: Size.fromHeight(135),
-        child: ProfileAppBar(),
+      appBar: PreferredSize(
+        preferredSize: Size.fromHeight(
+          ServiceRegistry.localStorage
+                      .read(LocalStorageSecrets.authenticationMethod) ==
+                  'GUEST'
+              ? 0
+              : 135,
+        ),
+        child: const ProfileAppBar(),
       ),
       body: LayoutBuilder(
         builder: (context, constraints) {
@@ -44,28 +52,38 @@ class _AccountScreenState extends State<AccountScreen> {
                 padding: const EdgeInsets.symmetric(
                   horizontal: AppSizes.horizontal_15,
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: AppSizes.vertical_10),
-                    const SizedBox(height: AppSizes.vertical_10),
-                    ListView.builder(
-                      shrinkWrap: true,
-                      itemCount: profileMenuItems.length,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemBuilder: (_, index) {
-                        return ProfileMenuItemCard(
-                          hasTopBorder: index != 0,
-                          item: profileMenuItems[index],
-                        );
-                      },
-                    ),
-                    Divider(color: AppColors.grayLightColor.withOpacity(0.6)),
-                    const LogoutButton(),
-                    const DeleteAccountButton(),
-                    const SizedBox(height: AppSizes.vertical_50),
-                  ],
-                ),
+                child: ServiceRegistry.localStorage
+                            .read(LocalStorageSecrets.authenticationMethod) ==
+                        'GUEST'
+                    ? SizedBox(
+                        height: AppSizes.screenHeight(context) * 0.7,
+                        child: const Center(
+                          child: InsecureDashboardContent(),
+                        ),
+                      )
+                    : Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(height: AppSizes.vertical_10),
+                          const SizedBox(height: AppSizes.vertical_10),
+                          ListView.builder(
+                            shrinkWrap: true,
+                            itemCount: profileMenuItems.length,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemBuilder: (_, index) {
+                              return ProfileMenuItemCard(
+                                hasTopBorder: index != 0,
+                                item: profileMenuItems[index],
+                              );
+                            },
+                          ),
+                          Divider(
+                              color: AppColors.grayLightColor.withOpacity(0.6)),
+                          const LogoutButton(),
+                          const DeleteAccountButton(),
+                          const SizedBox(height: AppSizes.vertical_50),
+                        ],
+                      ),
               ),
             ),
           );

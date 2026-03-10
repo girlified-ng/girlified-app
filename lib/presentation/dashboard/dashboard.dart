@@ -48,6 +48,16 @@ class _DashboardState extends State<Dashboard> {
     await Future.delayed(const Duration(seconds: 6));
   }
 
+  final List<Widget> screens = [
+    const OrdersScreen(),
+    // isEmptyHandlers
+    //     ? const SocialProtectionSetupScreen()
+    //     : const ProtectionDashboardScreen(),
+    const ProtectionDashboardScreen(),
+    const ActivityScreen(),
+    const AccountScreen()
+  ];
+
   @override
   initState() {
     initializeAppInfo();
@@ -60,22 +70,6 @@ class _DashboardState extends State<Dashboard> {
   @override
   Widget build(BuildContext context) {
     return Obx(() {
-      final account = ServiceRegistry.userRepository.accountInfo.value;
-
-      final bool isEmptyHandlers = account.snapchatHandle.isEmpty &&
-          account.instagramHandle.isEmpty &&
-          account.tiktokHandle.isEmpty &&
-          account.instagramHandle.isEmpty;
-
-      final List<Widget> screens = [
-        const OrdersScreen(),
-        isEmptyHandlers
-            ? const SocialProtectionSetupScreen()
-            : const ProtectionDashboardScreen(),
-        const ActivityScreen(),
-        const AccountScreen()
-      ];
-
       return WillPopScope(
         onWillPop: () async {
           return false;

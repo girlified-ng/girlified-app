@@ -6,8 +6,7 @@ import 'package:girlified/core/constants/routes.dart';
 import 'package:girlified/core/constants/secrets.dart';
 import 'package:built_collection/built_collection.dart';
 import 'package:girlified/components/snackbars/custom_snackbar.dart';
-import 'package:account_sdk/account_sdk.dart'
-    as AccountSdk;
+import 'package:account_sdk/account_sdk.dart' as AccountSdk;
 
 void userLogoutHandler({
   BuildContext? context,
@@ -47,6 +46,10 @@ void userLogoutHandler({
       ..profilePhoto =
           'https://medexer.s3.eu-north-1.amazonaws.com/avatars/avatar.png'
       ..fcmToken = ''
-      ..referralCode = '',
+      ..referralCode = ''
+      ..xHandle = ''
+      ..instagramHandle = ''
+      ..tiktokHandle = ''
+      ..snapchatHandle = '',
   );
 }

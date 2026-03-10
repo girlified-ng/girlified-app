@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:girlified/components/badges/girlified_icon_badge.dart';
 import 'package:girlified/components/carousels/testimonial_carousel.dart';
 import 'package:girlified/components/navigation/auth_redirect_link.dart';
+import 'package:girlified/components/text/custom_text_widget.dart';
 import 'package:girlified/core/providers/index.dart';
 import 'package:girlified/core/constants/sizes.dart';
 import 'package:girlified/core/constants/colors.dart';
@@ -202,6 +203,35 @@ class _LoginScreenState extends State<LoginScreen> {
                                     ? AppColors.buttonPrimaryDisabledColor
                                     : AppColors.buttonPrimaryColor,
                               ),
+                        Visibility(
+                          // visible: true,
+                          visible: Platform.isIOS,
+                          child: Column(
+                            children: [
+                              const SizedBox(height: AppSizes.horizontal_20),
+                              Center(
+                                child: InkWell(
+                                  onTap: () {
+                                    ServiceRegistry.localStorage.write(
+                                      LocalStorageSecrets.authenticationMethod,
+                                      'GUEST',
+                                    );
+
+                                    Get.offAndToNamed(AppRoutes.dashboardRoute);
+                                  },
+                                  overlayColor: const WidgetStatePropertyAll(
+                                    Colors.transparent,
+                                  ),
+                                  child: CustomTextWidget(
+                                    size: 16,
+                                    weight: FontWeight.w600,
+                                    text: 'Continue as Guest',
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                         const SizedBox(height: AppSizes.horizontal_30),
                         Visibility(
                           visible: ServiceRegistry

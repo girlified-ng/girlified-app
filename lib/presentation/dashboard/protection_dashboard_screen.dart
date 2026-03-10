@@ -2,9 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:get/get.dart';
 import 'package:girlified/components/navigation/custom_bottom_navigation.dart';
+import 'package:girlified/components/skeletons/insecure_dashboard_content.dart';
+import 'package:girlified/components/snackbars/custom_snackbar.dart';
 import 'package:girlified/components/text/title_text.dart';
 import 'package:girlified/core/constants/colors.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
+import 'package:girlified/core/constants/routes.dart';
+import 'package:girlified/core/constants/secrets.dart';
 import 'package:girlified/core/constants/sizes.dart';
 import 'package:girlified/core/providers/index.dart';
 
@@ -25,7 +29,30 @@ class _ProtectionDashboardScreenState extends State<ProtectionDashboardScreen> {
   @override
   void initState() {
     super.initState();
+    _initializeProtection();
+
     _loadProtectionState();
+  }
+
+  Future<void> _initializeProtection() async {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (ServiceRegistry.localStorage
+              .read(LocalStorageSecrets.authenticationMethod) ==
+          'GUEST') {
+        return;
+      }
+
+      final accountInfo = ServiceRegistry.userRepository.accountInfo.value;
+
+      final bool isEmptyHandlers = accountInfo.snapchatHandle.isEmpty &&
+          accountInfo.instagramHandle.isEmpty &&
+          accountInfo.tiktokHandle.isEmpty &&
+          accountInfo.instagramHandle.isEmpty;
+
+      if (isEmptyHandlers) {
+        Get.toNamed(AppRoutes.socialProtectionSetupRoute);
+      }
+    });
   }
 
   Future<void> _loadProtectionState() async {
@@ -50,11 +77,12 @@ class _ProtectionDashboardScreenState extends State<ProtectionDashboardScreen> {
 
     if (isProtectionActive) {
       // TODO: Start accessibility service
-      _showSnackbar(
-          'Protection Activated', 'Girlified is now monitoring your apps');
+      customSuccessMessageSnackbar(
+          title: 'Message', message: 'Girlified is now monitoring your apps');
     } else {
       // TODO: Stop accessibility service
-      _showSnackbar('Protection Paused', 'Girlified monitoring is paused');
+      customSuccessMessageSnackbar(
+          title: 'Message', message: 'Girlified monitoring is paused');
     }
   }
 
@@ -63,19 +91,6 @@ class _ProtectionDashboardScreenState extends State<ProtectionDashboardScreen> {
       sensitivityLevel = value;
     });
     await ServiceRegistry.localStorage.write('sensitivity_level', value);
-  }
-
-  void _showSnackbar(String title, String message) {
-    Get.snackbar(
-      title,
-      message,
-      backgroundColor: AppColors.darkThemeAppBarBackgroundColor,
-      colorText: AppColors.whiteColor,
-      snackPosition: SnackPosition.BOTTOM,
-      margin: const EdgeInsets.all(16),
-      borderRadius: 12,
-      duration: const Duration(seconds: 3),
-    );
   }
 
   String _getSensitivityLabel() {
@@ -98,9 +113,9 @@ class _ProtectionDashboardScreenState extends State<ProtectionDashboardScreen> {
               // top: AppSizes.vertical_5,
               horizontal: AppSizes.horizontal_15,
             ),
-            child: Column(
+            child: const Column(
               children: [
-                const Row(
+                Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     SizedBox(width: AppSizes.horizontal_35),
@@ -116,333 +131,372 @@ class _ProtectionDashboardScreenState extends State<ProtectionDashboardScreen> {
           ),
         ),
       ),
+      floatingActionButton: FloatingActionButton(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(100),
+        ),
+        elevation: 0,
+        backgroundColor: AppColors.blackColor,
+        foregroundColor: AppColors.whiteColor,
+        onPressed: () {
+          if (ServiceRegistry.localStorage
+                  .read(LocalStorageSecrets.authenticationMethod) ==
+              'GUEST') {
+            customErrorMessageSnackbar(
+              title: 'Message',
+              message: 'Login to set up protection!',
+            );
+
+            Get.toNamed(AppRoutes.loginRoute);
+          } else {
+            Get.toNamed(AppRoutes.socialProtectionSetupRoute);
+          }
+        },
+        child: const Icon(FluentIcons.lock_closed_key_16_regular),
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.only(left: 20, right: 20, bottom: 20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Main Protection Toggle Card
-              Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: isProtectionActive
-                        ? [AppColors.electricLilac, AppColors.tealColor]
-                        : [AppColors.cardBackground, AppColors.darkBackground],
+          child: ServiceRegistry.localStorage
+                      .read(LocalStorageSecrets.authenticationMethod) ==
+                  'GUEST'
+              ? SizedBox(
+                  height: Get.height * 0.7,
+                  child: const Center(
+                    child: InsecureDashboardContent(),
                   ),
-                  borderRadius: BorderRadius.circular(24),
-                  boxShadow: [
-                    BoxShadow(
-                      color: isProtectionActive
-                          ? AppColors.electricLilac.withOpacity(0.3)
-                          : Colors.black26,
-                      blurRadius: 20,
-                      offset: const Offset(0, 10),
-                    ),
-                  ],
-                ),
-                child: Column(
+                )
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Protection Icon with Pulse Animation
-                    GestureDetector(
-                      key: ValueKey(isProtectionActive),
-                      onTap: _toggleProtection,
-                      child: Container(
-                        width: 120,
-                        height: 120,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
-                          shape: BoxShape.circle,
+                    // Main Protesction Toggle Card
+                    Container(
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: isProtectionActive
+                              ? [AppColors.electricLilac, AppColors.tealColor]
+                              : [
+                                  AppColors.cardBackground,
+                                  AppColors.darkBackground
+                                ],
                         ),
-                        child: Center(
-                          child: Icon(
-                            isProtectionActive
-                                ? FluentIcons.shield_checkmark_48_filled
-                                : FluentIcons.shield_48_regular,
-                            size: 64,
-                            color: AppColors.whiteColor,
+                        borderRadius: BorderRadius.circular(24),
+                        boxShadow: [
+                          BoxShadow(
+                            color: isProtectionActive
+                                ? AppColors.electricLilac.withOpacity(0.3)
+                                : Colors.black26,
+                            blurRadius: 20,
+                            offset: const Offset(0, 10),
                           ),
-                        ),
-                      )
-                          .animate(
-                            autoPlay: false,
-                            onPlay: (controller) {
-                              if (isProtectionActive) controller.repeat();
-                            },
-                          )
-                          .shimmer(
-                            duration: isProtectionActive ? 2000.ms : 0.ms,
-                            color: Colors.white.withOpacity(0.3),
-                          )
-                          .scale(
-                            duration: isProtectionActive ? 1500.ms : 0.ms,
-                            begin: const Offset(1.0, 1.0),
-                            end: const Offset(1.05, 1.05),
-                          ),
-                    ),
-                    const SizedBox(height: 20),
-                    Text(
-                      isProtectionActive
-                          ? 'Protection Active'
-                          : 'Protection Paused',
-                      style: const TextStyle(
-                        color: AppColors.whiteColor,
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: 'SF Pro',
+                        ],
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      isProtectionActive
-                          ? 'Your digital bodyguard is watching'
-                          : 'Tap the shield to activate protection',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: AppColors.whiteColor.withOpacity(0.8),
-                        fontSize: 14,
-                        fontFamily: 'SF Pro',
+                      child: Column(
+                        children: [
+                          // Protection Icon with Pulse Animation
+                          GestureDetector(
+                            key: ValueKey(isProtectionActive),
+                            onTap: _toggleProtection,
+                            child: Container(
+                              width: 120,
+                              height: 120,
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.2),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Center(
+                                child: Icon(
+                                  isProtectionActive
+                                      ? FluentIcons.shield_checkmark_48_filled
+                                      : FluentIcons.shield_48_regular,
+                                  size: 64,
+                                  color: AppColors.whiteColor,
+                                ),
+                              ),
+                            )
+                                .animate(
+                                  autoPlay: false,
+                                  onPlay: (controller) {
+                                    if (isProtectionActive) controller.repeat();
+                                  },
+                                )
+                                .shimmer(
+                                  duration: isProtectionActive ? 2000.ms : 0.ms,
+                                  color: Colors.white.withOpacity(0.3),
+                                )
+                                .scale(
+                                  duration: isProtectionActive ? 1500.ms : 0.ms,
+                                  begin: const Offset(1.0, 1.0),
+                                  end: const Offset(1.05, 1.05),
+                                ),
+                          ),
+                          const SizedBox(height: 20),
+                          Text(
+                            isProtectionActive
+                                ? 'Protection Active'
+                                : 'Protection Paused',
+                            style: const TextStyle(
+                              color: AppColors.whiteColor,
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              fontFamily: 'SF Pro',
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            isProtectionActive
+                                ? 'Your digital bodyguard is watching'
+                                : 'Tap the shield to activate protection',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: AppColors.whiteColor.withOpacity(0.8),
+                              fontSize: 14,
+                              fontFamily: 'SF Pro',
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                          // Toggle Button
+                          ElevatedButton(
+                            onPressed: _toggleProtection,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.whiteColor,
+                              foregroundColor: isProtectionActive
+                                  ? AppColors.electricLilac
+                                  : AppColors.grayColor,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 32,
+                                vertical: 16,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(30),
+                              ),
+                              elevation: 0,
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  isProtectionActive
+                                      ? FluentIcons.pause_16_filled
+                                      : FluentIcons.play_16_filled,
+                                  size: 18,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  isProtectionActive
+                                      ? 'Pause Protection'
+                                      : 'Activate Protection',
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    fontFamily: 'SF Pro',
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                     const SizedBox(height: 24),
-                    // Toggle Button
-                    ElevatedButton(
-                      onPressed: _toggleProtection,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.whiteColor,
-                        foregroundColor: isProtectionActive
-                            ? AppColors.electricLilac
-                            : AppColors.grayColor,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 32,
-                          vertical: 16,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(30),
-                        ),
-                        elevation: 0,
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            isProtectionActive
-                                ? FluentIcons.pause_16_filled
-                                : FluentIcons.play_16_filled,
-                            size: 18,
+
+                    // Stats Cards
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildStatCard(
+                            icon: FluentIcons.shield_error_24_filled,
+                            label: 'Content Blocked',
+                            value: blockedContentCount.toString(),
+                            color: AppColors.dangerPrimaryColor,
                           ),
-                          const SizedBox(width: 8),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: _buildStatCard(
+                            icon: FluentIcons.scan_24_filled,
+                            label: 'Items Scanned',
+                            value: scanCount.toString(),
+                            color: AppColors.tealColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Sensitivity Control
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.06),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text(
+                                'Safety Sensitivity',
+                                style: TextStyle(
+                                  color: Color(0xFF1A1A2E),
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w600,
+                                  fontFamily: 'SF Pro',
+                                ),
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color:
+                                      AppColors.electricLilac.withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Text(
+                                  _getSensitivityLabel(),
+                                  style: const TextStyle(
+                                    color: AppColors.electricLilac,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    fontFamily: 'SF Pro',
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          SliderTheme(
+                            data: SliderThemeData(
+                              activeTrackColor: AppColors.electricLilac,
+                              inactiveTrackColor:
+                                  AppColors.grayColor.withOpacity(0.3),
+                              thumbColor: AppColors.electricLilac,
+                              overlayColor:
+                                  AppColors.electricLilac.withOpacity(0.2),
+                              thumbShape: const RoundSliderThumbShape(
+                                enabledThumbRadius: 12,
+                              ),
+                              trackHeight: 4,
+                            ),
+                            child: Slider(
+                              value: sensitivityLevel,
+                              min: 1.0,
+                              max: 3.0,
+                              divisions: 2,
+                              onChanged: _updateSensitivity,
+                            ),
+                          ),
+                          const Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'Low',
+                                style: TextStyle(
+                                  color: Color(0xFF6B7280),
+                                  fontSize: 12,
+                                  fontFamily: 'SF Pro',
+                                ),
+                              ),
+                              Text(
+                                'Medium',
+                                style: TextStyle(
+                                  color: Color(0xFF6B7280),
+                                  fontSize: 12,
+                                  fontFamily: 'SF Pro',
+                                ),
+                              ),
+                              Text(
+                                'High',
+                                style: TextStyle(
+                                  color: Color(0xFF6B7280),
+                                  fontSize: 12,
+                                  fontFamily: 'SF Pro',
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
                           Text(
-                            isProtectionActive
-                                ? 'Pause Protection'
-                                : 'Activate Protection',
+                            _getSensitivityDescription(),
                             style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF6B7280),
+                              fontSize: 13,
                               fontFamily: 'SF Pro',
                             ),
                           ),
                         ],
                       ),
                     ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
+                    const SizedBox(height: 24),
 
-              // Stats Cards
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildStatCard(
-                      icon: FluentIcons.shield_error_24_filled,
-                      label: 'Content Blocked',
-                      value: blockedContentCount.toString(),
-                      color: AppColors.dangerPrimaryColor,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: _buildStatCard(
-                      icon: FluentIcons.scan_24_filled,
-                      label: 'Items Scanned',
-                      value: scanCount.toString(),
-                      color: AppColors.tealColor,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-
-              // Sensitivity Control
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.06),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          'Safety Sensitivity',
-                          style: TextStyle(
-                            color: Color(0xFF1A1A2E),
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
-                            fontFamily: 'SF Pro',
+                    // Protected Apps Section
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.06),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
                           ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColors.electricLilac.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Text(
-                            _getSensitivityLabel(),
-                            style: const TextStyle(
-                              color: AppColors.electricLilac,
-                              fontSize: 12,
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Protected Apps',
+                            style: TextStyle(
+                              color: Color(0xFF1A1A2E),
+                              fontSize: 18,
                               fontWeight: FontWeight.w600,
                               fontFamily: 'SF Pro',
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    SliderTheme(
-                      data: SliderThemeData(
-                        activeTrackColor: AppColors.electricLilac,
-                        inactiveTrackColor:
-                            AppColors.grayColor.withOpacity(0.3),
-                        thumbColor: AppColors.electricLilac,
-                        overlayColor: AppColors.electricLilac.withOpacity(0.2),
-                        thumbShape: const RoundSliderThumbShape(
-                          enabledThumbRadius: 12,
-                        ),
-                        trackHeight: 4,
-                      ),
-                      child: Slider(
-                        value: sensitivityLevel,
-                        min: 1.0,
-                        max: 3.0,
-                        divisions: 2,
-                        onChanged: _updateSensitivity,
-                      ),
-                    ),
-                    const Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Low',
-                          style: TextStyle(
-                            color: Color(0xFF6B7280),
-                            fontSize: 12,
-                            fontFamily: 'SF Pro',
-                          ),
-                        ),
-                        Text(
-                          'Medium',
-                          style: TextStyle(
-                            color: Color(0xFF6B7280),
-                            fontSize: 12,
-                            fontFamily: 'SF Pro',
-                          ),
-                        ),
-                        Text(
-                          'High',
-                          style: TextStyle(
-                            color: Color(0xFF6B7280),
-                            fontSize: 12,
-                            fontFamily: 'SF Pro',
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      _getSensitivityDescription(),
-                      style: const TextStyle(
-                        color: Color(0xFF6B7280),
-                        fontSize: 13,
-                        fontFamily: 'SF Pro',
+                          const SizedBox(height: 16),
+                          _buildProtectedAppItem(
+                              'X/Twitter', 'com.twitter.android', true),
+                          _buildProtectedAppItem(
+                              'Instagram', 'com.instagram.android', true),
+                          _buildProtectedAppItem(
+                              'Snapchat', 'com.snapchat.android', true),
+                          _buildProtectedAppItem(
+                              'TikTok', 'com.zhiliaoapp.musically', true),
+                          const SizedBox(height: 12),
+                          // TextButton.icon(
+                          //   onPressed: () {
+                          //     // TODO: Navigate to app selection
+                          //   },
+                          //   icon: const Icon(
+                          //     FluentIcons.add_circle_16_regular,
+                          //     size: 18,
+                          //   ),
+                          //   label: const Text('Add More Apps'),
+                          //   style: TextButton.styleFrom(
+                          //     foregroundColor: AppColors.electricLilac,
+                          //   ),
+                          // ),
+                        ],
                       ),
                     ),
                   ],
                 ),
-              ),
-              const SizedBox(height: 24),
-
-              // Protected Apps Section
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.06),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Protected Apps',
-                      style: TextStyle(
-                        color: Color(0xFF1A1A2E),
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                        fontFamily: 'SF Pro',
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    _buildProtectedAppItem(
-                        'TikTok', 'com.zhiliaoapp.musically', true),
-                    _buildProtectedAppItem(
-                        'Instagram', 'com.instagram.android', true),
-                    _buildProtectedAppItem(
-                        'YouTube', 'com.google.android.youtube', true),
-                    const SizedBox(height: 12),
-                    // TextButton.icon(
-                    //   onPressed: () {
-                    //     // TODO: Navigate to app selection
-                    //   },
-                    //   icon: const Icon(
-                    //     FluentIcons.add_circle_16_regular,
-                    //     size: 18,
-                    //   ),
-                    //   label: const Text('Add More Apps'),
-                    //   style: TextButton.styleFrom(
-                    //     foregroundColor: AppColors.electricLilac,
-                    //   ),
-                    // ),
-                  ],
-                ),
-              ),
-            ],
-          ),
         ),
       ),
       bottomNavigationBar: CustomBottomNavigationBar(

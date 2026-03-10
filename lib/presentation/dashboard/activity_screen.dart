@@ -1,5 +1,7 @@
 import 'package:get/get.dart';
+import 'package:girlified/components/skeletons/insecure_dashboard_content.dart';
 import 'package:girlified/components/text/title_text.dart';
+import 'package:girlified/core/constants/secrets.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter/material.dart';
 import 'package:girlified/core/providers/index.dart';
@@ -167,13 +169,22 @@ class _ActivityScreenState extends State<ActivityScreen>
           ),
         ),
       ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          _buildBlockedContentTab(),
-          _buildStatisticsTab(),
-        ],
-      ),
+      body: ServiceRegistry.localStorage
+                  .read(LocalStorageSecrets.authenticationMethod) ==
+              'GUEST'
+          ? SizedBox(
+              height: Get.height * 0.7,
+              child: const Center(
+                child: InsecureDashboardContent(),
+              ),
+            )
+          : TabBarView(
+              controller: _tabController,
+              children: [
+                _buildBlockedContentTab(),
+                _buildStatisticsTab(),
+              ],
+            ),
       bottomNavigationBar: CustomBottomNavigationBar(
         onTap: (int value) {
           ServiceRegistry.commonRepository.currentScreenIndex.value = value;

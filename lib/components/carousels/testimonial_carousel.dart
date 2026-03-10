@@ -15,6 +15,7 @@ class TestimonialCarousel extends StatefulWidget {
   final double borderRadius;
   final int testimonialIndex;
   final String avatarDisplay;
+  final Color backgroundColor;
 
   const TestimonialCarousel({
     super.key,
@@ -25,6 +26,7 @@ class TestimonialCarousel extends StatefulWidget {
     this.hasBorder = false,
     this.testimonialIndex = 0,
     this.avatarDisplay = 'ROW',
+    this.backgroundColor = AppColors.whiteColor,
   });
 
   @override
@@ -87,12 +89,12 @@ class _TestimonialCarouselState extends State<TestimonialCarousel> {
           ? Container(
               width: double.maxFinite,
               decoration: BoxDecoration(
-                color: AppColors.whiteColor,
+                color: widget.backgroundColor,
                 borderRadius: BorderRadius.circular(widget.borderRadius),
                 border: Border.all(
                   color: widget.hasBorder
                       ? AppColors.grayLightColor
-                      : AppColors.whiteColor,
+                      : Colors.transparent,
                 ),
               ),
               padding: const EdgeInsets.all(8),

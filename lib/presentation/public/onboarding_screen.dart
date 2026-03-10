@@ -2,6 +2,7 @@ import 'package:flutter_localization/flutter_localization.dart';
 import 'package:get/get.dart';
 import 'package:flutter/material.dart';
 import 'package:get_storage/get_storage.dart';
+import 'package:girlified/components/carousels/testimonial_carousel.dart';
 import 'package:girlified/core/constants/sizes.dart';
 import 'package:girlified/core/providers/index.dart';
 import 'package:girlified/core/utilities/index.dart';
@@ -194,7 +195,21 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                               size: 40,
                               color: AppColors.whiteColor,
                             ),
-                            const SizedBox(height: AppSizes.vertical_70),
+                            const SizedBox(height: AppSizes.vertical_20),
+                            Obx(
+                              () => Visibility(
+                                visible: ServiceRegistry
+                                    .userRepository.testimonials.isNotEmpty,
+                                child: TestimonialCarousel(
+                                  hasBorder: false,
+                                  titleSize: 14,
+                                  bodySize: 15,
+                                  backgroundColor: AppColors.whiteColor
+                                      .withValues(alpha: 0.35),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: AppSizes.vertical_20),
                           ],
                         ),
                         CustomButton(

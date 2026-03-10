@@ -3,6 +3,9 @@ import 'package:flutter_localization/flutter_localization.dart';
 import 'package:get/get.dart';
 import 'package:flutter/material.dart';
 import 'package:girlified/components/navigation/custom_bottom_navigation.dart';
+import 'package:girlified/components/skeletons/insecure_dashboard_content.dart';
+import 'package:girlified/components/snackbars/custom_snackbar.dart';
+import 'package:girlified/core/constants/secrets.dart';
 import 'package:girlified/core/constants/sizes.dart';
 import 'package:girlified/core/providers/index.dart';
 import 'package:girlified/core/constants/colors.dart';
@@ -116,7 +119,18 @@ class _OrdersScreenState extends State<OrdersScreen> {
         backgroundColor: AppColors.blackColor,
         foregroundColor: AppColors.whiteColor,
         onPressed: () {
-          Get.toNamed(AppRoutes.orderPadRoute);
+          if (ServiceRegistry.localStorage
+                  .read(LocalStorageSecrets.authenticationMethod) ==
+              'GUEST') {
+            customErrorMessageSnackbar(
+              title: 'Message',
+              message: 'Login to create an order!',
+            );
+
+            Get.toNamed(AppRoutes.loginRoute);
+          } else {
+            Get.toNamed(AppRoutes.orderPadRoute);
+          }
         },
         child: const Icon(FluentIcons.add_16_regular),
       ),
@@ -130,67 +144,75 @@ class _OrdersScreenState extends State<OrdersScreen> {
                 constraints: BoxConstraints(
                   minHeight: constraints.maxHeight,
                 ),
-                child: Obx(
-                  () => Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSizes.horizontal_15,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        orderType == 'Ongoing'
-                            ? const SizedBox(height: AppSizes.vertical_10)
-                            : const SizedBox(),
-                        orderType == 'Completed'
-                            ? const SizedBox(height: AppSizes.vertical_10)
-                            : const SizedBox(),
-                        orderType == 'Ongoing'
-                            ? ServiceRegistry
-                                    .userRepository.ongoingOrders.isEmpty
-                                ? const EmptyResultsContent(
-                                    displayType: 'ONGOING_ORDERS',
-                                  )
-                                : ListView.builder(
-                                    shrinkWrap: true,
-                                    physics:
-                                        const NeverScrollableScrollPhysics(),
-                                    itemCount: ServiceRegistry
-                                        .userRepository.ongoingOrders.length,
-                                    itemBuilder: (_, index) {
-                                      return OngoingOrderItemCard(
-                                        orderInfo: ServiceRegistry
-                                            .userRepository
-                                            .ongoingOrders[index],
-                                      );
-                                    },
-                                  )
-                            : const SizedBox(),
-                        orderType == 'Completed'
-                            ? ServiceRegistry
-                                    .userRepository.completedOrders.isEmpty
-                                ? const EmptyResultsContent(
-                                    displayType: 'COMPLETED_ORDERS',
-                                  )
-                                : ListView.builder(
-                                    shrinkWrap: true,
-                                    physics:
-                                        const NeverScrollableScrollPhysics(),
-                                    itemCount: ServiceRegistry
-                                        .userRepository.completedOrders.length,
-                                    itemBuilder: (_, index) {
-                                      return CompletedOrderItemCard(
-                                        orderInfo: ServiceRegistry
-                                            .userRepository
-                                            .completedOrders[index],
-                                      );
-                                    },
-                                  )
-                            : const SizedBox(),
-                        const SizedBox(height: AppSizes.vertical_50),
-                      ],
-                    ),
-                  ),
-                ),
+                child: ServiceRegistry.localStorage
+                            .read(LocalStorageSecrets.authenticationMethod) ==
+                        'GUEST'
+                    ? const InsecureDashboardContent()
+                    : Obx(
+                        () => Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSizes.horizontal_15,
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              orderType == 'Ongoing'
+                                  ? const SizedBox(height: AppSizes.vertical_10)
+                                  : const SizedBox(),
+                              orderType == 'Completed'
+                                  ? const SizedBox(height: AppSizes.vertical_10)
+                                  : const SizedBox(),
+                              orderType == 'Ongoing'
+                                  ? ServiceRegistry
+                                          .userRepository.ongoingOrders.isEmpty
+                                      ? const EmptyResultsContent(
+                                          displayType: 'ONGOING_ORDERS',
+                                        )
+                                      : ListView.builder(
+                                          shrinkWrap: true,
+                                          physics:
+                                              const NeverScrollableScrollPhysics(),
+                                          itemCount: ServiceRegistry
+                                              .userRepository
+                                              .ongoingOrders
+                                              .length,
+                                          itemBuilder: (_, index) {
+                                            return OngoingOrderItemCard(
+                                              orderInfo: ServiceRegistry
+                                                  .userRepository
+                                                  .ongoingOrders[index],
+                                            );
+                                          },
+                                        )
+                                  : const SizedBox(),
+                              orderType == 'Completed'
+                                  ? ServiceRegistry.userRepository
+                                          .completedOrders.isEmpty
+                                      ? const EmptyResultsContent(
+                                          displayType: 'COMPLETED_ORDERS',
+                                        )
+                                      : ListView.builder(
+                                          shrinkWrap: true,
+                                          physics:
+                                              const NeverScrollableScrollPhysics(),
+                                          itemCount: ServiceRegistry
+                                              .userRepository
+                                              .completedOrders
+                                              .length,
+                                          itemBuilder: (_, index) {
+                                            return CompletedOrderItemCard(
+                                              orderInfo: ServiceRegistry
+                                                  .userRepository
+                                                  .completedOrders[index],
+                                            );
+                                          },
+                                        )
+                                  : const SizedBox(),
+                              const SizedBox(height: AppSizes.vertical_50),
+                            ],
+                          ),
+                        ),
+                      ),
               ),
             );
           },
