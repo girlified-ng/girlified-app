@@ -26,14 +26,16 @@ class _SocialProtectionSetupScreenState
   String processingStatus = '';
 
   Future<void> _handleProtect() async {
-    if (twitterController.text.isEmpty &&
-        instagramController.text.isEmpty &&
-        tiktokController.text.isEmpty &&
+    if (twitterController.text.isEmpty ||
+        instagramController.text.isEmpty ||
+        tiktokController.text.isEmpty ||
         snapchatController.text.isEmpty) {
       setState(() {
         isProtecting = false;
       });
-      Get.snackbar('Error', 'Please fill all fields');
+      Get.snackbar('Error', 'Please fill all fields',
+          backgroundColor: AppColors.dangerColor.withOpacity(0.8),
+          colorText: AppColors.whiteColor);
       return;
     }
 
@@ -72,7 +74,7 @@ class _SocialProtectionSetupScreenState
     await ServiceRegistry.localStorage.write('scan_count', 1450);
 
     if (!mounted) return;
-    
+
     Get.offAllNamed(AppRoutes.dashboardRoute);
   }
 
