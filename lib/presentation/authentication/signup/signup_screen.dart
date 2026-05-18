@@ -178,7 +178,7 @@ class _SignupScreenState extends State<SignupScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       SizedBox(height: AppSizes.vertical_30),
-                      GirlifiedIconBadge(size: 40),
+                      GirlifiedIconBadge(size: 30),
                       SizedBox(height: AppSizes.vertical_15),
                       TitleText(
                         size: 20,

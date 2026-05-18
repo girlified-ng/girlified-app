@@ -15,7 +15,7 @@
         tools:node="remove" />
     
     <application
-        android:label="Girlified"
+        android:label="Girlified SaifeAI"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

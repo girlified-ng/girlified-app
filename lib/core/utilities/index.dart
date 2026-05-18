@@ -4,10 +4,10 @@ import 'package:girlified/core/models/profile_menu_item_model.dart';
 
 List<OnboardingItemModel> onboardingItems = [
   OnboardingItemModel(
-    title1: 'Access Menstrual',
-    title2: 'Care, Anywhere',
+    title1: 'Stay Safe',
+    title2: 'Online',
     title3: '',
-    image: 'assets/images/onboarding_1.jpg',
+    image: 'assets/images/onboarding_11.jpg',
   ),
   OnboardingItemModel(
     title1: 'Your Wellbeing,',

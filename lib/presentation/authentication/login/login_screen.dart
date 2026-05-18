@@ -147,7 +147,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const SizedBox(height: AppSizes.vertical_100),
-                        const GirlifiedIconBadge(size: 40),
+                        const GirlifiedIconBadge(size: 30),
                         const SizedBox(height: AppSizes.vertical_15),
                         SubtitleText(
                           size: 20,

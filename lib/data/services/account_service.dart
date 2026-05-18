@@ -1067,13 +1067,13 @@ class AccountService extends GetxController {
   /// [ROUTE] - /account/me/update-social-handles
   ///
   /// [IS-AUTHENTICATED]
-  Future<void> updateAccountSocialHandlesService(
+  Future<bool> updateAccountSocialHandlesService(
       UpdateSocialHandlesDTO payload) async {
-    return authGuard<void>(() async {
+    return await authGuard<bool>(() async {
       if (ServiceRegistry.localStorage
               .read(LocalStorageSecrets.authenticationMethod) ==
           'GUEST') {
-        return;
+        return false;
       }
 
       try {
@@ -1104,6 +1104,8 @@ class AccountService extends GetxController {
           log("[UPDATE-ACCOUNT-SOCIAL-HANDLES-INFO-SUCCESS]");
 
           isUpdateAccountInfoProcessing.value = false;
+
+          return true;
         }
       } catch (error) {
         isUpdateAccountInfoProcessing.value = false;
@@ -1118,6 +1120,8 @@ class AccountService extends GetxController {
       } finally {
         isUpdateAccountInfoProcessing.value = false;
       }
-    });
+
+      return false;
+    }) ?? false;
   }
 }

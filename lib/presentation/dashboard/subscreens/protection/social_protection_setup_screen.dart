@@ -47,9 +47,9 @@ class _SocialProtectionSetupScreenState
   }
 
   Future<void> _handleProtect() async {
-    if (twitterController.text.isEmpty ||
-        instagramController.text.isEmpty ||
-        tiktokController.text.isEmpty ||
+    if (twitterController.text.isEmpty &&
+        instagramController.text.isEmpty &&
+        tiktokController.text.isEmpty &&
         snapchatController.text.isEmpty) {
       setState(() {
         isProtecting = false;
@@ -57,7 +57,7 @@ class _SocialProtectionSetupScreenState
 
       return customErrorMessageSnackbar(
         title: 'Message',
-        message: 'Please fill all fields',
+        message: 'Please provide at least one social media handle',
       );
     }
 

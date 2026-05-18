@@ -12,14 +12,14 @@ class GirlifiedIconBadge extends StatelessWidget {
     return Container(
       width: size,
       height: size,
-      padding: const EdgeInsets.all(5),
+      // padding: const EdgeInsets.all(5),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(15),
-        border: Border.all(
-            color: AppColors.grayLightColor.withValues(alpha: opacity)),
+        // border: Border.all(
+        //     color: AppColors.grayLightColor.withValues(alpha: opacity)),
       ),
       child: Image.asset(
-        'assets/icons/icon_girlified_clif.png',
+        'assets/icons/icon_saifeai_cliff.png',
         width: size,
         fit: BoxFit.cover,
       ),

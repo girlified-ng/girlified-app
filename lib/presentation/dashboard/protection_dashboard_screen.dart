@@ -35,11 +35,16 @@ class _ProtectionDashboardScreenState extends State<ProtectionDashboardScreen> {
   }
 
   Future<void> _initializeProtection() async {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (ServiceRegistry.localStorage
               .read(LocalStorageSecrets.authenticationMethod) ==
           'GUEST') {
         return;
+      }
+
+      if (ServiceRegistry.userRepository.accountInfo.value.email.isEmpty) {
+        await ServiceRegistry.accountService
+            .fetchDetailedUserAccountInfoService();
       }
 
       final accountInfo = ServiceRegistry.userRepository.accountInfo.value;
@@ -47,7 +52,7 @@ class _ProtectionDashboardScreenState extends State<ProtectionDashboardScreen> {
       final bool isEmptyHandlers = accountInfo.snapchatHandle.isEmpty &&
           accountInfo.instagramHandle.isEmpty &&
           accountInfo.tiktokHandle.isEmpty &&
-          accountInfo.instagramHandle.isEmpty;
+          accountInfo.xHandle.isEmpty;
 
       if (isEmptyHandlers) {
         Get.toNamed(AppRoutes.socialProtectionSetupRoute);

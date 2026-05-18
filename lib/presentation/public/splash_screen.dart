@@ -63,7 +63,7 @@ class _SplashScreenState extends State<SplashScreen> {
                   ),
                 ],
                 child: Image.asset(
-                  'assets/icons/icon_logo.png',
+                  'assets/icons/icon_saifeai_logo.png',
                   width: 40,
                 ),
               ),

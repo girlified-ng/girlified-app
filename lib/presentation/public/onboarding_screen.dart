@@ -124,7 +124,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Image.asset(
-                          'assets/icons/icon_girlified_clif.png',
+                          'assets/icons/icon_saifeai_cliff.png',
                           width: 30,
                         ),
                         // Builder(
