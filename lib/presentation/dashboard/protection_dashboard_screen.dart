@@ -74,21 +74,77 @@ class _ProtectionDashboardScreenState extends State<ProtectionDashboardScreen> {
   }
 
   Future<void> _toggleProtection() async {
-    setState(() {
-      isProtectionActive = !isProtectionActive;
-    });
-    await ServiceRegistry.localStorage
-        .write('protection_active', isProtectionActive);
-
     if (isProtectionActive) {
-      // TODO: Start accessibility service
-      customSuccessMessageSnackbar(
-          title: 'Message', message: 'Girlified is now monitoring your apps');
-    } else {
-      // TODO: Stop accessibility service
+      // Prompt for PIN to disable
+      bool authorized = await _showPinVerificationDialog();
+      if (!authorized) return;
+      
+      await ServiceRegistry.digitalSafeguardService.stopDigitalSafeguard();
+      setState(() {
+        isProtectionActive = false;
+      });
+      await ServiceRegistry.localStorage.write('protection_active', false);
       customSuccessMessageSnackbar(
           title: 'Message', message: 'Girlified monitoring is paused');
+    } else {
+      List<dynamic> rawKeywords = ServiceRegistry.localStorage.read('protection_keywords') ?? [];
+      List<String> keywords = rawKeywords.map((e) => e.toString()).toList();
+      await ServiceRegistry.digitalSafeguardService.startDigitalSafeguard(keywords);
+      
+      setState(() {
+        isProtectionActive = true;
+      });
+      await ServiceRegistry.localStorage.write('protection_active', true);
+      customSuccessMessageSnackbar(
+          title: 'Message', message: 'Girlified is now monitoring your apps');
     }
+  }
+
+  Future<bool> _showPinVerificationDialog() async {
+    String storedPin = ServiceRegistry.localStorage.read('protection_pin') ?? '';
+    if (storedPin.isEmpty) return true; // No PIN set
+
+    bool isAuthorized = false;
+    TextEditingController pinController = TextEditingController();
+
+    await Get.dialog(
+      AlertDialog(
+        backgroundColor: AppColors.darkThemeBackgroundColor,
+        title: const Text('Verify PIN', style: TextStyle(color: Colors.white)),
+        content: TextField(
+          controller: pinController,
+          obscureText: true,
+          keyboardType: TextInputType.number,
+          maxLength: 6,
+          style: const TextStyle(color: Colors.white),
+          decoration: InputDecoration(
+            hintText: 'Enter your 4-6 digit PIN',
+            hintStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
+            enabledBorder: const UnderlineInputBorder(borderSide: BorderSide(color: AppColors.electricLilac)),
+            focusedBorder: const UnderlineInputBorder(borderSide: BorderSide(color: AppColors.electricLilac)),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+          ),
+          TextButton(
+            onPressed: () {
+              if (pinController.text == storedPin) {
+                isAuthorized = true;
+                Get.back();
+              } else {
+                customErrorMessageSnackbar(title: 'Error', message: 'Incorrect PIN');
+                pinController.clear();
+              }
+            },
+            child: const Text('Confirm', style: TextStyle(color: AppColors.electricLilac)),
+          ),
+        ],
+      ),
+    );
+    return isAuthorized;
   }
 
   Future<void> _updateSensitivity(double value) async {
@@ -314,7 +370,7 @@ class _ProtectionDashboardScreenState extends State<ProtectionDashboardScreen> {
                         Expanded(
                           child: _buildStatCard(
                             icon: FluentIcons.shield_error_24_filled,
-                            label: 'Content Blocked',
+                            label: 'Harassment Attempts Blocked',
                             value: blockedContentCount.toString(),
                             color: AppColors.dangerPrimaryColor,
                           ),
@@ -322,13 +378,65 @@ class _ProtectionDashboardScreenState extends State<ProtectionDashboardScreen> {
                         const SizedBox(width: 16),
                         Expanded(
                           child: _buildStatCard(
-                            icon: FluentIcons.scan_24_filled,
-                            label: 'Items Scanned',
+                            icon: FluentIcons.globe_shield_24_filled,
+                            label: 'Sites Intercepted',
                             value: scanCount.toString(),
                             color: AppColors.tealColor,
                           ),
                         ),
                       ],
+                    ),
+                    const SizedBox(height: 24),
+                    
+                    // Status Grid - Active Protection Layers
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.06),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Active Protection Layers',
+                            style: TextStyle(
+                              color: Color(0xFF1A1A2E),
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                              fontFamily: 'SF Pro',
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          _buildProtectionLayerRow(
+                            'Encrypted DNS Shield',
+                            'Routing queries via family.dns.mullvad.net',
+                            isProtectionActive,
+                            FluentIcons.globe_24_regular,
+                          ),
+                          const SizedBox(height: 12),
+                          _buildProtectionLayerRow(
+                            'UI Scraper Monitor',
+                            'Detecting harassment via Accessibility Service',
+                            isProtectionActive,
+                            FluentIcons.eye_tracking_24_regular,
+                          ),
+                          const SizedBox(height: 12),
+                          _buildProtectionLayerRow(
+                            'App Shielding',
+                            'Screen Time limits enforced on targeted apps',
+                            isProtectionActive,
+                            FluentIcons.phone_lock_24_regular,
+                          ),
+                        ],
+                      ),
                     ),
                     const SizedBox(height: 24),
 
@@ -624,5 +732,65 @@ class _ProtectionDashboardScreenState extends State<ProtectionDashboardScreen> {
     } else {
       return 'Maximum protection - blocks all potentially harmful content';
     }
+  }
+
+  Widget _buildProtectionLayerRow(String title, String subtitle, bool isActive, IconData icon) {
+    return Row(
+      children: [
+        Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: isActive ? AppColors.tealColor.withOpacity(0.2) : AppColors.grayColor.withOpacity(0.2),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(
+            icon,
+            color: isActive ? AppColors.tealColor : AppColors.grayColor,
+            size: 20,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  color: Color(0xFF1A1A2E),
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                  fontFamily: 'SF Pro',
+                ),
+              ),
+              Text(
+                subtitle,
+                style: const TextStyle(
+                  color: Color(0xFF6B7280),
+                  fontSize: 11,
+                  fontFamily: 'SF Pro',
+                ),
+              ),
+            ],
+          ),
+        ),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: isActive ? AppColors.tealColor.withOpacity(0.1) : AppColors.dangerPrimaryColor.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Text(
+            isActive ? 'Active' : 'Offline',
+            style: TextStyle(
+              color: isActive ? AppColors.tealColor : AppColors.dangerPrimaryColor,
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+      ],
+    );
   }
 }

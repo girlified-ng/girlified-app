@@ -12,6 +12,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:girlified/data/repositories/user_repository.dart';
 import 'package:girlified/data/repositories/common_repository.dart';
 import 'package:girlified/data/services/authentication_service.dart';
+import 'package:girlified/data/services/digital_safeguard_service.dart';
 
 class ServiceRegistry {
   static Dio dioBaseOptions = Dio(BaseOptions(
@@ -35,6 +36,8 @@ class ServiceRegistry {
 
   static AuthenticationService authenticationService =
       Get.find<AuthenticationService>();
+
+  static DigitalSafeguardService digitalSafeguardService = DigitalSafeguardService();
 
   static AuthSdk authSdk = AuthSdk(
     dio: dioBaseOptions,

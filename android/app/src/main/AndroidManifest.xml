@@ -47,8 +47,8 @@
             android:value="2" />
         
         <!-- Girlified Accessibility Service -->
-        <!-- <service
-            android:name=".SaifeAccessibilityService"
+        <service
+            android:name=".AntiViolenceAccessibilityService"
             android:exported="true"
             android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
             <intent-filter>
@@ -57,8 +57,17 @@
             <meta-data
                 android:name="android.accessibilityservice"
                 android:resource="@xml/accessibility_service_config" />
-        </service> -->
+        </service>
         
+        <!-- Girlified VPN Service -->
+        <service
+            android:name=".SaifeGuardianVpnService"
+            android:permission="android.permission.BIND_VPN_SERVICE"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.net.VpnService" />
+            </intent-filter>
+        </service>
         <!-- Background Service for Protection -->
        <service
             android:name="id.flutter.flutter_background_service.BackgroundService"
