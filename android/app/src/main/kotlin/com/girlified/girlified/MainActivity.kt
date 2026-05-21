@@ -54,9 +54,15 @@ class MainActivity: FlutterActivity() {
                     val vpnIntent = Intent(this, SaifeGuardianVpnService::class.java)
                     startService(vpnIntent)
                     // Note: AccessibilityService starts automatically when enabled by user in settings.
-                    // We sync the enabled state here.
+                    // We sync the enabled state here and save keywords.
+                    val keywords = call.argument<List<String>>("keywords")
                     val prefs = getSharedPreferences("GirlifiedPrefs", Context.MODE_PRIVATE)
-                    prefs.edit().putBoolean("accessibility_monitoring_enabled", true).apply()
+                    val editor = prefs.edit()
+                    editor.putBoolean("accessibility_monitoring_enabled", true)
+                    if (keywords != null) {
+                        editor.putStringSet("protection_keywords", keywords.toSet())
+                    }
+                    editor.apply()
                     
                     result.success(true)
                 }

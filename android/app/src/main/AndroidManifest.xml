@@ -48,7 +48,7 @@
         
         <!-- Girlified Accessibility Service -->
         <service
-            android:name=".AntiViolenceAccessibilityService"
+            android:name=".SaifeAccessibilityService"
             android:exported="true"
             android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
             <intent-filter>

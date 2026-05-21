@@ -462,7 +462,7 @@ List<String> keywords =[
           spacing: 8,
           runSpacing: 8,
           children: keywords.map((kw) => Chip(
-            label: Text(kw, style: const TextStyle(color: Colors.white)),
+            label: Text(kw, style: const TextStyle(color: Colors.black)),
             backgroundColor: AppColors.electricLilac.withOpacity(0.2),
             deleteIcon: const Icon(Icons.close, size: 16, color: Colors.white70),
             onDeleted: () => _removeKeyword(kw),
