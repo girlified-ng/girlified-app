@@ -13,6 +13,7 @@ class FormEmailField extends StatelessWidget {
   final TextInputType? keyboardType;
   final TextEditingController textController;
   final bool showCharacterCount;
+  final TextInputAction? textInputAction;
   const FormEmailField({
     super.key,
     this.width,
@@ -22,6 +23,7 @@ class FormEmailField extends StatelessWidget {
     this.labelSize = 14,
     this.maxLength,
     required this.textController,
+    this.textInputAction,
     this.showCharacterCount = false,
   });
 
@@ -64,7 +66,8 @@ class FormEmailField extends StatelessWidget {
                     keyboardType: keyboardType,
                     paddingTop: -3,
                     borderRadius: 8,
-                    paddingLeft: 10,
+                    paddingLeft: 10,  
+                    textInputAction: textInputAction,
                     borderColor: Colors.transparent,
                     textColor: AppColors.primaryTextColor,
                     hintColor: AppColors.grayColor.withOpacity(0.3),

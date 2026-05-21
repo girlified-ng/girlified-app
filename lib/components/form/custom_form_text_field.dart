@@ -33,6 +33,7 @@ class CustomFormTextField extends StatefulWidget {
   final Function(String)? onChanged;
   TextEditingController? controller;
   List<TextInputFormatter>? inputFormatters;
+  TextInputAction? textInputAction;
 
   CustomFormTextField({
     super.key,
@@ -62,6 +63,7 @@ class CustomFormTextField extends StatefulWidget {
     this.paddingBottom,
     this.letterSpacing,
     this.inputFormatters,
+    this.textInputAction,
     required this.height,
     required this.maxLines,
     required this.hintColor,
@@ -100,7 +102,7 @@ class _CustomFormTextFieldState extends State<CustomFormTextField> {
           textAlign: widget.textAlign ?? TextAlign.left,
           controller: widget.controller ?? widget.controller,
           keyboardType: widget.keyboardType ?? TextInputType.multiline,
-          textInputAction: TextInputAction.next,
+          textInputAction: widget.textInputAction ?? TextInputAction.next,
           decoration: InputDecoration(
             border: InputBorder.none,
             hintText: widget.hintText ?? '',

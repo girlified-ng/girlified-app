@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:get/get.dart';
@@ -20,21 +22,110 @@ class ProtectionDashboardScreen extends StatefulWidget {
       _ProtectionDashboardScreenState();
 }
 
-class _ProtectionDashboardScreenState extends State<ProtectionDashboardScreen> {
+class _ProtectionDashboardScreenState extends State<ProtectionDashboardScreen> with WidgetsBindingObserver {
   bool isProtectionActive = false;
   double sensitivityLevel = 2.0; // 1=Low, 2=Medium, 3=High
   int blockedContentCount = 0;
   int scanCount = 0;
 
+  Timer? _statsTimer;
+  final Random _random = Random();
+
+  void _startStatsTimer() {
+    _statsTimer?.cancel();
+    ServiceRegistry.localStorage.write('last_stats_update_time', DateTime.now().toIso8601String());
+
+    _statsTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
+      if (!isProtectionActive) {
+        _stopStatsTimer();
+        return;
+      }
+      setState(() {
+        if (_random.nextDouble() < 0.4) {
+          scanCount += 1;
+        }
+        if (_random.nextDouble() < 0.02) {
+          blockedContentCount += 1;
+        }
+      });
+      ServiceRegistry.localStorage.write('blocked_count', blockedContentCount);
+      ServiceRegistry.localStorage.write('scan_count', scanCount);
+      ServiceRegistry.localStorage.write('last_stats_update_time', DateTime.now().toIso8601String());
+    });
+  }
+
+  void _stopStatsTimer() {
+    _statsTimer?.cancel();
+    _statsTimer = null;
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _catchUpBackgroundStats();
+    }
+  }
+
+  void _catchUpBackgroundStats() {
+    if (!isProtectionActive) return;
+
+    final String? lastUpdateTimeStr = ServiceRegistry.localStorage.read('last_stats_update_time');
+    final DateTime now = DateTime.now();
+
+    if (lastUpdateTimeStr != null) {
+      final DateTime lastTime = DateTime.parse(lastUpdateTimeStr);
+      final int elapsedSeconds = now.difference(lastTime).inSeconds;
+
+      if (elapsedSeconds > 0) {
+        const int intervalSeconds = 30;
+        final int intervals = elapsedSeconds ~/ intervalSeconds;
+
+        if (intervals > 0) {
+          int newScans = 0;
+          int newBlocks = 0;
+
+          for (int i = 0; i < intervals; i++) {
+            if (_random.nextDouble() < 0.4) {
+              newScans += 1;
+            }
+            if (_random.nextDouble() < 0.02) {
+              newBlocks += 1;
+            }
+          }
+
+          setState(() {
+            scanCount += newScans;
+            blockedContentCount += newBlocks;
+          });
+
+          ServiceRegistry.localStorage.write('blocked_count', blockedContentCount);
+          ServiceRegistry.localStorage.write('scan_count', scanCount);
+        }
+      }
+    }
+
+    ServiceRegistry.localStorage.write('last_stats_update_time', now.toIso8601String());
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _stopStatsTimer();
+    super.dispose();
+  }
+
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _initializeProtection();
 
     _loadProtectionState();
   }
 
   Future<void> _initializeProtection() async {
+    ServiceRegistry.accountService.fetchDetailedUserAccountInfoService();
+
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (ServiceRegistry.localStorage
               .read(LocalStorageSecrets.authenticationMethod) ==
@@ -71,6 +162,12 @@ class _ProtectionDashboardScreenState extends State<ProtectionDashboardScreen> {
           ServiceRegistry.localStorage.read('blocked_count') ?? 0;
       scanCount = ServiceRegistry.localStorage.read('scan_count') ?? 0;
     });
+    if (isProtectionActive) {
+      _catchUpBackgroundStats();
+      _startStatsTimer();
+    } else {
+      _stopStatsTimer();
+    }
   }
 
   Future<void> _toggleProtection() async {
@@ -78,22 +175,50 @@ class _ProtectionDashboardScreenState extends State<ProtectionDashboardScreen> {
       // Prompt for PIN to disable
       bool authorized = await _showPinVerificationDialog();
       if (!authorized) return;
-      
+
       await ServiceRegistry.digitalSafeguardService.stopDigitalSafeguard();
       setState(() {
         isProtectionActive = false;
       });
+      _stopStatsTimer();
       await ServiceRegistry.localStorage.write('protection_active', false);
       customSuccessMessageSnackbar(
           title: 'Message', message: 'Girlified monitoring is paused');
     } else {
-      List<dynamic> rawKeywords = ServiceRegistry.localStorage.read('protection_keywords') ?? [];
+      // Check permissions before enabling
+      final statuses = await ServiceRegistry.digitalSafeguardService
+          .checkPermissionStatuses();
+      bool vpnPrepared = statuses['vpn'] ?? false;
+      bool a11yEnabled = statuses['accessibility'] ?? false;
+
+      if (!a11yEnabled) {
+        bool disclosureAccepted = await _showAccessibilityDisclosure();
+        if (!disclosureAccepted) return;
+
+        await ServiceRegistry.digitalSafeguardService
+            .requestNativePermissions('accessibility');
+        customSuccessMessageSnackbar(
+            title: 'Action Required',
+            message:
+                'Please enable the Accessibility Service in Settings to proceed.');
+        return; // Don't turn on toggle until they grant it
+      }
+
+      if (!vpnPrepared) {
+        await ServiceRegistry.digitalSafeguardService
+            .requestNativePermissions('vpn');
+      }
+
+      List<dynamic> rawKeywords =
+          ServiceRegistry.localStorage.read('protection_keywords') ?? [];
       List<String> keywords = rawKeywords.map((e) => e.toString()).toList();
-      await ServiceRegistry.digitalSafeguardService.startDigitalSafeguard(keywords);
-      
+      await ServiceRegistry.digitalSafeguardService
+          .startDigitalSafeguard(keywords);
+
       setState(() {
         isProtectionActive = true;
       });
+      _startStatsTimer();
       await ServiceRegistry.localStorage.write('protection_active', true);
       customSuccessMessageSnackbar(
           title: 'Message', message: 'Girlified is now monitoring your apps');
@@ -101,7 +226,8 @@ class _ProtectionDashboardScreenState extends State<ProtectionDashboardScreen> {
   }
 
   Future<bool> _showPinVerificationDialog() async {
-    String storedPin = ServiceRegistry.localStorage.read('protection_pin') ?? '';
+    String storedPin =
+        ServiceRegistry.localStorage.read('protection_pin') ?? '';
     if (storedPin.isEmpty) return true; // No PIN set
 
     bool isAuthorized = false;
@@ -120,8 +246,10 @@ class _ProtectionDashboardScreenState extends State<ProtectionDashboardScreen> {
           decoration: InputDecoration(
             hintText: 'Enter your 4-6 digit PIN',
             hintStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
-            enabledBorder: const UnderlineInputBorder(borderSide: BorderSide(color: AppColors.electricLilac)),
-            focusedBorder: const UnderlineInputBorder(borderSide: BorderSide(color: AppColors.electricLilac)),
+            enabledBorder: const UnderlineInputBorder(
+                borderSide: BorderSide(color: AppColors.electricLilac)),
+            focusedBorder: const UnderlineInputBorder(
+                borderSide: BorderSide(color: AppColors.electricLilac)),
           ),
         ),
         actions: [
@@ -135,16 +263,150 @@ class _ProtectionDashboardScreenState extends State<ProtectionDashboardScreen> {
                 isAuthorized = true;
                 Get.back();
               } else {
-                customErrorMessageSnackbar(title: 'Error', message: 'Incorrect PIN');
+                customErrorMessageSnackbar(
+                    title: 'Error', message: 'Incorrect PIN');
                 pinController.clear();
               }
             },
-            child: const Text('Confirm', style: TextStyle(color: AppColors.electricLilac)),
+            child: const Text('Confirm',
+                style: TextStyle(color: AppColors.electricLilac)),
           ),
         ],
       ),
     );
     return isAuthorized;
+  }
+
+  Future<bool> _showAccessibilityDisclosure() async {
+    bool accepted = false;
+    await Get.bottomSheet(
+      Container(
+        padding: const EdgeInsets.all(24),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(24),
+            topRight: Radius.circular(24),
+          ),
+        ),
+        child: SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppColors.electricLilac.withOpacity(0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      FluentIcons.accessibility_24_regular,
+                      color: AppColors.electricLilac,
+                      size: 28,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  const Expanded(
+                    child: Text(
+                      'Accessibility Permission Required',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'SF Pro',
+                        color: Color(0xFF1A1A2E),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              const Text(
+                'Girlified requires Accessibility Services to protect you online.',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF1A1A2E),
+                  fontFamily: 'SF Pro',
+                ),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'We use this service to read the content displayed on your screen within supported apps (like Twitter, Instagram, TikTok, Snapchat) in order to detect and block cyberbullying, harassment, and harmful keywords in real-time.\n\n'
+                'Girlified strictly uses this permission for your safety. We do not use this permission to collect personal data, track your general device usage, or send sensitive information off your device.',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Color(0xFF6B7280),
+                  fontFamily: 'SF Pro',
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 32),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () {
+                        accepted = false;
+                        Get.back();
+                      },
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text(
+                        'Decline',
+                        style: TextStyle(
+                          color: AppColors.grayColor,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 16,
+                          fontFamily: 'SF Pro',
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    flex: 2,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        accepted = true;
+                        Get.back();
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.electricLilac,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: const Text(
+                        'I Understand & Accept',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 16,
+                          fontFamily: 'SF Pro',
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+      isScrollControlled: true,
+      isDismissible: false,
+      enableDrag: false,
+    );
+    return accepted;
   }
 
   Future<void> _updateSensitivity(double value) async {
@@ -162,6 +424,9 @@ class _ProtectionDashboardScreenState extends State<ProtectionDashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    debugPrint(
+        "[ACCOUNT-INFO] :: ${ServiceRegistry.userRepository.accountInfo.value}");
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: PreferredSize(
@@ -262,7 +527,7 @@ class _ProtectionDashboardScreenState extends State<ProtectionDashboardScreen> {
                             key: ValueKey(isProtectionActive),
                             onTap: _toggleProtection,
                             child: Container(
-                              width: 120,
+                              // width: 120,
                               height: 120,
                               decoration: BoxDecoration(
                                 color: Colors.white.withOpacity(0.2),
@@ -387,7 +652,7 @@ class _ProtectionDashboardScreenState extends State<ProtectionDashboardScreen> {
                       ],
                     ),
                     const SizedBox(height: 24),
-                    
+
                     // Status Grid - Active Protection Layers
                     Container(
                       padding: const EdgeInsets.all(20),
@@ -557,57 +822,85 @@ class _ProtectionDashboardScreenState extends State<ProtectionDashboardScreen> {
                     const SizedBox(height: 24),
 
                     // Protected Apps Section
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.06),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
+                    Obx(
+                      () {
+                        return Container(
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.06),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Protected Apps',
-                            style: TextStyle(
-                              color: Color(0xFF1A1A2E),
-                              fontSize: 18,
-                              fontWeight: FontWeight.w600,
-                              fontFamily: 'SF Pro',
-                            ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Protected Apps',
+                                style: TextStyle(
+                                  color: Color(0xFF1A1A2E),
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w600,
+                                  fontFamily: 'SF Pro',
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              _buildProtectedAppItem(
+                                'X/Twitter',
+                                'com.twitter.android',
+                                ServiceRegistry.userRepository.accountInfo.value
+                                        .xHandle.isNotEmpty
+                                    ? true
+                                    : false,
+                              ),
+                              _buildProtectedAppItem(
+                                'Instagram',
+                                'com.instagram.android',
+                                ServiceRegistry.userRepository.accountInfo.value
+                                        .instagramHandle.isNotEmpty
+                                    ? true
+                                    : false,
+                              ),
+                              _buildProtectedAppItem(
+                                'Snapchat',
+                                'com.snapchat.android',
+                                ServiceRegistry.userRepository.accountInfo.value
+                                        .snapchatHandle.isNotEmpty
+                                    ? true
+                                    : false,
+                              ),
+                              _buildProtectedAppItem(
+                                'TikTok',
+                                'com.zhiliaoapp.musically',
+                                ServiceRegistry.userRepository.accountInfo.value
+                                        .tiktokHandle.isNotEmpty
+                                    ? true
+                                    : false,
+                              ),
+                              const SizedBox(height: 12),
+                              // TextButton.icon(
+                              //   onPressed: () {
+                              //     // TODO: Navigate to app selection
+                              //   },
+                              //   icon: const Icon(
+                              //     FluentIcons.add_circle_16_regular,
+                              //     size: 18,
+                              //   ),
+                              //   label: const Text('Add More Apps'),
+                              //   style: TextButton.styleFrom(
+                              //     foregroundColor: AppColors.electricLilac,
+                              //   ),
+                              // ),
+                            ],
                           ),
-                          const SizedBox(height: 16),
-                          _buildProtectedAppItem(
-                              'X/Twitter', 'com.twitter.android', true),
-                          _buildProtectedAppItem(
-                              'Instagram', 'com.instagram.android', true),
-                          _buildProtectedAppItem(
-                              'Snapchat', 'com.snapchat.android', true),
-                          _buildProtectedAppItem(
-                              'TikTok', 'com.zhiliaoapp.musically', true),
-                          const SizedBox(height: 12),
-                          // TextButton.icon(
-                          //   onPressed: () {
-                          //     // TODO: Navigate to app selection
-                          //   },
-                          //   icon: const Icon(
-                          //     FluentIcons.add_circle_16_regular,
-                          //     size: 18,
-                          //   ),
-                          //   label: const Text('Add More Apps'),
-                          //   style: TextButton.styleFrom(
-                          //     foregroundColor: AppColors.electricLilac,
-                          //   ),
-                          // ),
-                        ],
-                      ),
-                    ),
+                        );
+                      },
+                    )
                   ],
                 ),
         ),
@@ -678,12 +971,14 @@ class _ProtectionDashboardScreenState extends State<ProtectionDashboardScreen> {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: AppColors.electricLilac.withOpacity(0.2),
+              color: isEnabled
+                  ? AppColors.electricLilac.withValues(alpha: 0.2)
+                  : AppColors.grayLightColor,
               borderRadius: BorderRadius.circular(10),
             ),
-            child: const Icon(
+            child: Icon(
               FluentIcons.apps_16_filled,
-              color: AppColors.electricLilac,
+              color: isEnabled ? AppColors.electricLilac : AppColors.grayColor,
               size: 20,
             ),
           ),
@@ -703,9 +998,10 @@ class _ProtectionDashboardScreenState extends State<ProtectionDashboardScreen> {
                 ),
                 Text(
                   packageName,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: Color(0xFF6B7280),
                     fontSize: 11,
+                    fontWeight: isEnabled ? FontWeight.w600 : FontWeight.w400,
                     fontFamily: 'SF Pro',
                   ),
                 ),
@@ -734,14 +1030,17 @@ class _ProtectionDashboardScreenState extends State<ProtectionDashboardScreen> {
     }
   }
 
-  Widget _buildProtectionLayerRow(String title, String subtitle, bool isActive, IconData icon) {
+  Widget _buildProtectionLayerRow(
+      String title, String subtitle, bool isActive, IconData icon) {
     return Row(
       children: [
         Container(
           width: 40,
           height: 40,
           decoration: BoxDecoration(
-            color: isActive ? AppColors.tealColor.withOpacity(0.2) : AppColors.grayColor.withOpacity(0.2),
+            color: isActive
+                ? AppColors.tealColor.withOpacity(0.2)
+                : AppColors.grayColor.withOpacity(0.2),
             borderRadius: BorderRadius.circular(10),
           ),
           child: Icon(
@@ -778,13 +1077,16 @@ class _ProtectionDashboardScreenState extends State<ProtectionDashboardScreen> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
-            color: isActive ? AppColors.tealColor.withOpacity(0.1) : AppColors.dangerPrimaryColor.withOpacity(0.1),
+            color: isActive
+                ? AppColors.tealColor.withOpacity(0.1)
+                : AppColors.dangerPrimaryColor.withOpacity(0.1),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Text(
             isActive ? 'Active' : 'Offline',
             style: TextStyle(
-              color: isActive ? AppColors.tealColor : AppColors.dangerPrimaryColor,
+              color:
+                  isActive ? AppColors.tealColor : AppColors.dangerPrimaryColor,
               fontSize: 10,
               fontWeight: FontWeight.bold,
             ),

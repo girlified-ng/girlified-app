@@ -49,12 +49,12 @@ class _DashboardState extends State<Dashboard> {
   }
 
   final List<Widget> screens = [
-    const OrdersScreen(),
     // isEmptyHandlers
     //     ? const SocialProtectionSetupScreen()
     //     : const ProtectionDashboardScreen(),
     const ProtectionDashboardScreen(),
     const ActivityScreen(),
+    const OrdersScreen(),
     const AccountScreen()
   ];
 

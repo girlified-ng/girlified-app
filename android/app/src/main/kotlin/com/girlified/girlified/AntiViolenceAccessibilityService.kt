@@ -52,13 +52,28 @@ class AntiViolenceAccessibilityService : AccessibilityService() {
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent) {
+        val prefs = getSharedPreferences("GirlifiedPrefs", android.content.Context.MODE_PRIVATE)
+        val isEnabled = prefs.getBoolean("accessibility_monitoring_enabled", true)
+        if (!isEnabled) {
+            // Make sure to hide overlay if it was showing when disabled
+            if (isOverlayShowing) hideOverlay()
+            return
+        }
+
         val rootNode = rootInActiveWindow ?: return
         val packageName = event.packageName?.toString() ?: return
         
         // Settings Monitor: Intercept uninstall or service disable
-        if (packageName == "com.android.settings") {
-            if (traverseForAppInfo(rootNode)) {
-                showSettingsPinOverlay()
+        if (packageName == "com.android.settings" || packageName == "com.android.vpndialogs") {
+            val allText = mutableListOf<String>()
+            getAllText(rootNode, allText)
+            val fullText = allText.joinToString(" ")
+            
+            val hasAppName = fullText.contains("girlified") || fullText.contains("saifeai guardian")
+            val isVpnDialog = fullText.contains("connection request") || fullText.contains("vpn connection")
+            
+            if (hasAppName && !isVpnDialog) {
+                // showSettingsPinOverlay()
             } else if (isOverlayShowing) {
                 hideOverlay()
             }
@@ -68,30 +83,31 @@ class AntiViolenceAccessibilityService : AccessibilityService() {
         // Harassment Monitor
         if (targetPackages.contains(packageName)) {
             val found = traverseAndCheckKeywords(rootNode)
-            if (found && !isOverlayShowing) {
-                showOverlay("Safe Space Enforced: Harassment Filter Active")
-            } else if (!found && isOverlayShowing) {
+            if (found) {
+                // Act silently in the background so we don't stop the user from using their phone
+                Log.d("SaifeGuardianA11y", "Harmful content detected in background.")
+            }
+            if (isOverlayShowing) {
+                hideOverlay()
+            }
+        } else {
+            // Fix: We left the target apps, so make sure any stuck overlay is removed!
+            if (isOverlayShowing) {
                 hideOverlay()
             }
         }
     }
     
-    private fun traverseForAppInfo(node: AccessibilityNodeInfo): Boolean {
+    private fun getAllText(node: AccessibilityNodeInfo, textList: MutableList<String>) {
         if (node.text != null) {
-            val text = node.text.toString().lowercase()
-            if (text.contains("girlified") || text.contains("saifeai guardian")) {
-                return true
-            }
+            textList.add(node.text.toString().lowercase())
         }
         for (i in 0 until node.childCount) {
             val child = node.getChild(i)
             if (child != null) {
-                if (traverseForAppInfo(child)) {
-                    return true
-                }
+                getAllText(child, textList)
             }
         }
-        return false
     }
 
     private fun traverseAndCheckKeywords(node: AccessibilityNodeInfo): Boolean {

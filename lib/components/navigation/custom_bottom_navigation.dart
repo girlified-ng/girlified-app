@@ -64,19 +64,6 @@ class _CustomBottomNavigationBarState extends State<CustomBottomNavigationBar> {
               color: AppColors.textTertiaryInverseColor,
             ),
             selectedIcon: Icon(
-              FluentIcons.shopping_bag_16_regular,
-              size: 20,
-              color: AppColors.electricLilac,
-            ),
-            label: 'Orders',
-          ),
-          NavigationDestination(
-            icon: Icon(
-              FluentIcons.shield_checkmark_16_regular,
-              size: 20,
-              color: AppColors.textTertiaryInverseColor,
-            ),
-            selectedIcon: Icon(
               FluentIcons.shield_checkmark_16_filled,
               size: 20,
               color: AppColors.electricLilac,
@@ -95,6 +82,19 @@ class _CustomBottomNavigationBarState extends State<CustomBottomNavigationBar> {
               color: AppColors.electricLilac,
             ),
             label: 'Activity',
+          ),
+          NavigationDestination(
+            icon: Icon(
+              FluentIcons.shield_checkmark_16_regular,
+              size: 20,
+              color: AppColors.textTertiaryInverseColor,
+            ),
+            selectedIcon: Icon(
+              FluentIcons.shopping_bag_16_regular,
+              size: 20,
+              color: AppColors.electricLilac,
+            ),
+            label: 'Orders',
           ),
           NavigationDestination(
             icon: Icon(

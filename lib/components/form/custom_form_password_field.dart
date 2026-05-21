@@ -15,6 +15,7 @@ class CustomFormPasswordField extends StatefulWidget {
   ImageIcon? prefixIcon;
   final bool showSuffixIcon;
   TextEditingController? controller;
+  final TextInputAction? textInputAction;
   CustomFormPasswordField({
     super.key,
     this.prefixIcon,
@@ -24,6 +25,7 @@ class CustomFormPasswordField extends StatefulWidget {
     this.fontColor,
     this.borderColor,
     this.hintColor,
+    this.textInputAction,
     required this.showSuffixIcon,
     required this.hidePassword,
     this.controller,
@@ -62,7 +64,7 @@ class _CustomFormPasswordFieldState extends State<CustomFormPasswordField> {
         controller: widget.controller ?? widget.controller,
         keyboardType: TextInputType.multiline,
         textAlignVertical: TextAlignVertical.center,
-        textInputAction: TextInputAction.next,
+        textInputAction: widget.textInputAction ?? TextInputAction.next,
         decoration: InputDecoration(
           border: InputBorder.none,
           hintText: widget.hintText,

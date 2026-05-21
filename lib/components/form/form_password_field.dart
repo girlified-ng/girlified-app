@@ -9,10 +9,12 @@ class FormPasswordField extends StatelessWidget {
   final String hintText;
   final bool hidePassword;
   final bool showSuffixIcon;
+  final TextInputAction? textInputAction;
   final TextEditingController passwordController;
   const FormPasswordField({
     super.key,
     required this.label,
+    this.textInputAction,
     required this.hintText,
     required this.hidePassword,
     this.showSuffixIcon = false,
@@ -35,6 +37,7 @@ class FormPasswordField extends StatelessWidget {
             hidePassword: hidePassword,
             showSuffixIcon: showSuffixIcon,
             fontColor: AppColors.textColor,
+            textInputAction: textInputAction, 
             borderColor: AppColors.grayLightColor,
             hintColor: AppColors.grayColor.withOpacity(0.3),
           ),

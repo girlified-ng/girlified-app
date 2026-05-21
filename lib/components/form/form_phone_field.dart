@@ -9,10 +9,12 @@ import 'package:girlified/components/pickers/phone_country_picker.dart';
 class FormPhoneField extends StatelessWidget {
   final String label;
   final TextEditingController phoneController;
+  final TextInputAction? textInputAction;
   const FormPhoneField({
     super.key,
     this.label = 'Phone number',
     required this.phoneController,
+    this.textInputAction,
   });
 
   @override
@@ -47,6 +49,7 @@ class FormPhoneField extends StatelessWidget {
                     borderRadius: 8,
                     width: double.maxFinite,
                     keyboardType: TextInputType.phone,
+                    textInputAction: textInputAction,
                     textColor: AppColors.primaryTextColor,
                     hintColor: AppColors.grayColor.withOpacity(0.3),
                     borderColor: AppColors.grayLightColor,

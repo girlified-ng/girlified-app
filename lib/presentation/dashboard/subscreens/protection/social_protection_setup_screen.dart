@@ -8,6 +8,7 @@ import 'package:girlified/core/constants/routes.dart';
 import 'package:girlified/core/providers/index.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:girlified/data/infra_sdk/account/lib/account_sdk.dart';
+import 'package:girlified/core/utilities/protection_metrics.dart';
 
 class SocialProtectionSetupScreen extends StatefulWidget {
   const SocialProtectionSetupScreen({super.key});
@@ -203,6 +204,7 @@ List<String> keywords =[
     }
 
     await ServiceRegistry.localStorage.write('protection_active', true);
+    ProtectionMetricsHelper.logProtectionStateChange(true);
 
     if (!mounted) return;
     Get.offAllNamed(AppRoutes.dashboardRoute);

@@ -160,6 +160,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           label: 'Email Address',
                           hintText: 'ayomide@gmail.com',
                           textController: emailController,
+                          textInputAction: TextInputAction.done,
                         ),
                         const SizedBox(height: AppSizes.vertical_10),
                         FormPasswordField(
@@ -167,6 +168,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           hintText: '********',
                           showSuffixIcon: true,
                           hidePassword: hidePassword,
+                          textInputAction: TextInputAction.done,
                           passwordController: passwordController,
                         ),
                         const SizedBox(height: AppSizes.vertical_20),

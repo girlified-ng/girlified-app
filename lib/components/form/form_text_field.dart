@@ -14,6 +14,7 @@ class FormTextField extends StatelessWidget {
   final TextInputType? keyboardType;
   final TextEditingController textController;
   final bool showCharacterCount;
+  final TextInputAction? textInputAction;
   const FormTextField({
     super.key,
     this.width,
@@ -24,6 +25,7 @@ class FormTextField extends StatelessWidget {
     this.maxLength,
     required this.textController,
     this.showCharacterCount = false,
+    this.textInputAction,
   });
 
   @override
@@ -45,6 +47,7 @@ class FormTextField extends StatelessWidget {
             height: 48,
             maxLength: maxLength,
             keyboardType: keyboardType,
+            textInputAction: textInputAction,
             paddingTop: -3,
             borderRadius: 8,
             textColor: AppColors.primaryTextColor,

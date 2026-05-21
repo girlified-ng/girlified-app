@@ -54,12 +54,19 @@ class MainActivity: FlutterActivity() {
                     val vpnIntent = Intent(this, SaifeGuardianVpnService::class.java)
                     startService(vpnIntent)
                     // Note: AccessibilityService starts automatically when enabled by user in settings.
-                    // We would typically sync the keywords to SharedPreferences here.
+                    // We sync the enabled state here.
+                    val prefs = getSharedPreferences("GirlifiedPrefs", Context.MODE_PRIVATE)
+                    prefs.edit().putBoolean("accessibility_monitoring_enabled", true).apply()
+                    
                     result.success(true)
                 }
                 "stopDigitalSafeguard" -> {
                     val vpnIntent = Intent(this, SaifeGuardianVpnService::class.java)
                     stopService(vpnIntent)
+
+                    val prefs = getSharedPreferences("GirlifiedPrefs", Context.MODE_PRIVATE)
+                    prefs.edit().putBoolean("accessibility_monitoring_enabled", false).apply()
+
                     result.success(true)
                 }
                 else -> {
