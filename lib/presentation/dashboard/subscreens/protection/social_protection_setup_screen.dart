@@ -371,13 +371,6 @@ List<String> keywords =[
         const SizedBox(height: 40),
         if (Platform.isAndroid) ...[
           _buildPermissionTile(
-            'Local VPN Service',
-            'Required to block malicious network requests securely on device.',
-            hasVpnPermission,
-            () => _requestPermission('vpn'),
-          ),
-          const SizedBox(height: 16),
-          _buildPermissionTile(
             'Accessibility Service',
             'Required to scan screen contents for harassment and overlay warnings.',
             hasAccessibilityPermission,

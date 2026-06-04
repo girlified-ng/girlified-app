@@ -21,7 +21,6 @@ class DNSBlockingService {
             disconnectRule.interfaceTypeMatch = .any
             manager.onDemandRules = [disconnectRule]
             manager.localizedDescription = "SaifeAI Secure DNS"
-            manager.isEnabled = true
             
             manager.saveToPreferences { error in
                 if let error = error {
@@ -35,9 +34,12 @@ class DNSBlockingService {
     
     func disableDNS() {
         let manager = NEDNSSettingsManager.shared()
-        manager.loadFromPreferences { _ in
-            manager.isEnabled = false
-            manager.saveToPreferences { _ in }
+        manager.removeFromPreferences { error in
+            if let error = error {
+                print("Failed to remove DNS settings: \(error)")
+            } else {
+                print("DNS settings removed successfully")
+            }
         }
     }
 }

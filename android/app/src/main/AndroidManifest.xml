@@ -15,7 +15,7 @@
         tools:node="remove" />
     
     <application
-        android:label="Girlified SaifeAI"
+        android:label="SaifeAI"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
@@ -59,15 +59,7 @@
                 android:resource="@xml/accessibility_service_config" />
         </service>
         
-        <!-- Girlified VPN Service -->
-        <service
-            android:name=".SaifeGuardianVpnService"
-            android:permission="android.permission.BIND_VPN_SERVICE"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.net.VpnService" />
-            </intent-filter>
-        </service>
+
         <!-- Background Service for Protection -->
        <service
             android:name="id.flutter.flutter_background_service.BackgroundService"

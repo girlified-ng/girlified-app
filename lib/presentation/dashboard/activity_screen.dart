@@ -889,7 +889,7 @@ class _ActivityScreenState extends State<ActivityScreen>
           ),
           const SizedBox(height: 8),
           Text(
-            'Great! Girlified hasn\'t detected any\nharmful content yet.',
+            'Great! SaifeAI hasn\'t detected any\nharmful content yet.',
             textAlign: TextAlign.center,
             style: TextStyle(
               color: AppColors.textTertiaryColor,

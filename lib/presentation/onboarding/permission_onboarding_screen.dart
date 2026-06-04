@@ -22,7 +22,7 @@ class _PermissionOnboardingScreenState
   final List<OnboardingPage> _pages = [
     OnboardingPage(
       icon: FluentIcons.shield_checkmark_48_filled,
-      title: 'Welcome to Girlified',
+      title: 'Welcome to SaifeAI',
       description:
           'Your digital bodyguard that protects you from harmful content on social media.',
       color: AppColors.electricLilac,
@@ -31,7 +31,7 @@ class _PermissionOnboardingScreenState
       icon: FluentIcons.eye_48_filled,
       title: 'Real-Time Protection',
       description:
-          'Girlified monitors TikTok, Instagram, and YouTube in real-time to detect and block harmful content before you see it.',
+          'SaifeAI monitors TikTok, Instagram, and YouTube in real-time to detect and block harmful content before you see it.',
       color: AppColors.tealColor,
     ),
     OnboardingPage(
@@ -45,7 +45,7 @@ class _PermissionOnboardingScreenState
       icon: FluentIcons.settings_48_filled,
       title: 'Permissions Required',
       description:
-          'To protect you, Girlified needs special permissions. Let\'s set them up together.',
+          'To protect you, SaifeAI needs special permissions. Let\'s set them up together.',
       color: AppColors.tealColor,
       isPermissionPage: true,
     ),
@@ -296,7 +296,7 @@ class _PermissionsSetupSheetState extends State<PermissionsSetupSheet> {
     // TODO: Open accessibility settings via platform channel
     Get.snackbar(
       'Opening Settings',
-      'Please enable Girlified in Accessibility Services',
+      'Please enable SaifeAI in Accessibility Services',
       backgroundColor: AppColors.darkThemeAppBarBackgroundColor,
       colorText: AppColors.whiteColor,
       snackPosition: SnackPosition.BOTTOM,
@@ -360,7 +360,7 @@ class _PermissionsSetupSheetState extends State<PermissionsSetupSheet> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Girlified needs these permissions to protect you',
+            'SaifeAI needs these permissions to protect you',
             style: TextStyle(
               color: AppColors.textTertiaryInverseColor,
               fontSize: 14,
@@ -376,7 +376,7 @@ class _PermissionsSetupSheetState extends State<PermissionsSetupSheet> {
                     icon: FluentIcons.accessibility_checkmark_24_filled,
                     title: 'Accessibility Service',
                     description:
-                        'Allows Girlified to read screen content in real-time to detect harmful material',
+                        'Allows SaifeAI to read screen content in real-time to detect harmful material',
                     isGranted: _accessibilityGranted,
                     onTap: _openAccessibilitySettings,
                   ),

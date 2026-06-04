@@ -599,7 +599,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: Column(
                 children: [
                   BodyText(
-                    text: 'Girlified App Version 1.1.2',
+                    text: 'SaifeAI App Version 1.1.2',
                     color: AppColors.contentTertiaryColor,
                     alignment: TextAlign.center,
                   ),

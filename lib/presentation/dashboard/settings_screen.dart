@@ -17,7 +17,7 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   bool notificationsEnabled = true;
   bool hapticFeedbackEnabled = true;
-  bool darkModeEnabled = true;
+  bool darkModeEnabled = true; 
   bool autoBlockEnabled = true;
   String appVersion = '1.0.0';
 
@@ -78,7 +78,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 const SizedBox(height: 16),
                 _buildPermissionItem(
                   'Accessibility Service',
-                  'Allows Girlified to monitor app content in real-time',
+                  'Allows SaifeAI to monitor app content in real-time',
                   accessibilityStatus.isGranted,
                 ),
                 _buildPermissionItem(
@@ -127,7 +127,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     // TODO: Open accessibility settings via platform channel
     Get.snackbar(
       'Opening Settings',
-      'Please enable Girlified in Accessibility Services',
+      'Please enable SaifeAI in Accessibility Services',
       backgroundColor: AppColors.darkThemeAppBarBackgroundColor,
       colorText: AppColors.whiteColor,
       snackPosition: SnackPosition.BOTTOM,
@@ -639,7 +639,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ],
         ),
         content: const Text(
-          'Girlified processes all content analysis on your device using TensorFlow Lite. '
+          'SaifeAI processes all content analysis on your device using TensorFlow Lite. '
           'No screenshots or data are ever sent to our servers. Your privacy is our priority.',
           style: TextStyle(
             color: AppColors.whiteColor,

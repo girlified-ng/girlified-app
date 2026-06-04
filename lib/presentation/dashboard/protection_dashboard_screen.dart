@@ -183,12 +183,11 @@ class _ProtectionDashboardScreenState extends State<ProtectionDashboardScreen> w
       _stopStatsTimer();
       await ServiceRegistry.localStorage.write('protection_active', false);
       customSuccessMessageSnackbar(
-          title: 'Message', message: 'Girlified monitoring is paused');
+          title: 'Message', message: 'SaifeAI monitoring is paused');
     } else {
       // Check permissions before enabling
       final statuses = await ServiceRegistry.digitalSafeguardService
           .checkPermissionStatuses();
-      bool vpnPrepared = statuses['vpn'] ?? false;
       bool a11yEnabled = statuses['accessibility'] ?? false;
 
       if (!a11yEnabled) {
@@ -204,11 +203,6 @@ class _ProtectionDashboardScreenState extends State<ProtectionDashboardScreen> w
         return; // Don't turn on toggle until they grant it
       }
 
-      if (!vpnPrepared) {
-        await ServiceRegistry.digitalSafeguardService
-            .requestNativePermissions('vpn');
-      }
-
       List<dynamic> rawKeywords =
           ServiceRegistry.localStorage.read('protection_keywords') ?? [];
       List<String> keywords = rawKeywords.map((e) => e.toString()).toList();
@@ -221,7 +215,7 @@ class _ProtectionDashboardScreenState extends State<ProtectionDashboardScreen> w
       _startStatsTimer();
       await ServiceRegistry.localStorage.write('protection_active', true);
       customSuccessMessageSnackbar(
-          title: 'Message', message: 'Girlified is now monitoring your apps');
+          title: 'Message', message: 'SaifeAI is now monitoring your apps');
     }
   }
 
@@ -324,7 +318,7 @@ class _ProtectionDashboardScreenState extends State<ProtectionDashboardScreen> w
               ),
               const SizedBox(height: 24),
               const Text(
-                'Girlified requires Accessibility Services to protect you online.',
+                'SaifeAI requires Accessibility Services to protect you online.',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
@@ -335,7 +329,7 @@ class _ProtectionDashboardScreenState extends State<ProtectionDashboardScreen> w
               const SizedBox(height: 12),
               const Text(
                 'We use this service to read the content displayed on your screen within supported apps (like Twitter, Instagram, TikTok, Snapchat) in order to detect and block cyberbullying, harassment, and harmful keywords in real-time.\n\n'
-                'Girlified strictly uses this permission for your safety. We do not use this permission to collect personal data, track your general device usage, or send sensitive information off your device.',
+                'SaifeAI strictly uses this permission for your safety. We do not use this permission to collect personal data, track your general device usage, or send sensitive information off your device.',
                 style: TextStyle(
                   fontSize: 14,
                   color: Color(0xFF6B7280),

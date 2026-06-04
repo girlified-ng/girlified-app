@@ -7,8 +7,18 @@ class AppShieldController {
     let store = ManagedSettingsStore()
     
     func requestAuthorization(completion: @escaping (Bool) -> Void) {
-        if #available(iOS 15.0, *) {
-            AuthorizationCenter.shared.requestAuthorization(for: .individual) { result in
+        if #available(iOS 16.0, *) {
+            Task {
+                do {
+                    try await AuthorizationCenter.shared.requestAuthorization(for: .individual)
+                    completion(true)
+                } catch {
+                    print("Failed to authorize Family Controls: \(error)")
+                    completion(false)
+                }
+            }
+        } else if #available(iOS 15.0, *) {
+            AuthorizationCenter.shared.requestAuthorization { result in
                 switch result {
                 case .success:
                     completion(true)

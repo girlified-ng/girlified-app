@@ -53,7 +53,7 @@ class ProtectionService {
     // Create notification channel for Android
     const androidChannel = AndroidNotificationChannel(
       'saife_protection',
-      'Girlified Protection',
+      'SaifeAI Protection',
       description: 'Notifications for blocked harmful content',
       importance: Importance.high,
     );
@@ -73,7 +73,7 @@ class ProtectionService {
         autoStart: false,
         isForegroundMode: true,
         notificationChannelId: 'saife_protection',
-        initialNotificationTitle: 'Girlified',
+        initialNotificationTitle: 'SaifeAI',
         initialNotificationContent: 'Protection is active',
         foregroundServiceNotificationId: 888,
       ),
@@ -106,7 +106,7 @@ class ProtectionService {
     // Show notification
     await _showNotification(
       'Protection Active',
-      'Girlified is now monitoring your apps',
+      'SaifeAI is now monitoring your apps',
       isOngoing: true,
     );
   }
@@ -160,7 +160,7 @@ class ProtectionService {
   }) async {
     final androidDetails = AndroidNotificationDetails(
       'saife_protection',
-      'Girlified Protection',
+      'SaifeAI Protection',
       channelDescription: 'Notifications for blocked harmful content',
       importance: Importance.high,
       priority: Priority.high,
@@ -211,7 +211,7 @@ class ProtectionService {
         if (await service.isForegroundService()) {
           // Update foreground notification
           service.setForegroundNotificationInfo(
-            title: 'Girlified Protection',
+            title: 'SaifeAI Protection',
             content: 'Monitoring your apps...',
           );
         }

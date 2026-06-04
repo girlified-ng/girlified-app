@@ -43,7 +43,7 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: const PreferredSize(
         preferredSize: Size.fromHeight(50),
         child: DefaultAppbar(
-          title: 'Girlified',
+          title: 'SaifeAI',
           showBackButton: false,
         ),
       ),

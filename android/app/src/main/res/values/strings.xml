@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Girlified</string>
+    <string name="app_name">SaifeAI</string>
     <string name="accessibility_service_description">
-        Girlified monitors social media apps in real-time to detect and block harmful content.
+        SaifeAI monitors social media apps in real-time to detect and block harmful content.
         This service needs accessibility permissions to read screen content and protect you from
         violence, harassment, and other harmful material. All processing happens on your device
         and no data is sent to external servers.
