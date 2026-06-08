@@ -71,6 +71,7 @@ dependencies:
     flutter_local_notifications: ^18.0.1
     shared_preferences: ^2.3.3
     sqflite: ^2.4.1
+    flutter_overlay_window: ^0.4.2
     auth_sdk:
       path: lib/data/infra_sdk/auth
     account_sdk:

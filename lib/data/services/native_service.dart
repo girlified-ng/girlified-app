@@ -84,10 +84,12 @@ class NativeService {
     }
   }
 
-  /// Listen to events from native code
+  /// Listen to events from native code (text_scraped, content_blocked).
   Stream<Map<String, dynamic>> get nativeEvents {
     return _eventChannel.receiveBroadcastStream().map((event) {
-      return Map<String, dynamic>.from(event as Map);
+      final Map<String, dynamic> payload = Map<String, dynamic>.from(event as Map);
+      print('[SAFETY_PIPELINE] EventChannel payload: ${payload['event']}');
+      return payload;
     });
   }
 

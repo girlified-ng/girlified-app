@@ -8,7 +8,6 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.graphics.Color
 import android.graphics.PixelFormat
-import android.graphics.Rect
 import android.graphics.drawable.GradientDrawable
 import android.os.Build
 import android.os.Handler
@@ -24,9 +23,11 @@ import android.widget.TextView
 class SaifeAccessibilityService : AccessibilityService() {
 
     private val TAG = "SaifeAccessibility"
+    private val DETECT_TAG = "SAFETY_APP_DETECT"
     private var windowManager: WindowManager? = null
     private var isProtectionActive = false
     private val activeOverlays = mutableListOf<View>()
+    private var fullScreenBlockView: View? = null
 
     // Target apps to monitor
     private val targetApps = setOf(
@@ -45,6 +46,7 @@ class SaifeAccessibilityService : AccessibilityService() {
                 isProtectionActive = active
                 if (!active) {
                     clearOverlays()
+                    clearFullScreenBlockOverlay()
                 } else {
                     scheduleUpdate()
                 }
@@ -85,7 +87,11 @@ class SaifeAccessibilityService : AccessibilityService() {
         // Register receiver for active state changes
         try {
             val filter = IntentFilter("com.girlified.saife.SET_PROTECTION")
-            registerReceiver(protectionReceiver, filter)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                registerReceiver(protectionReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
+            } else {
+                registerReceiver(protectionReceiver, filter)
+            }
         } catch (e: Exception) {
             Log.e(TAG, "Error registering receiver", e)
         }
@@ -95,22 +101,27 @@ class SaifeAccessibilityService : AccessibilityService() {
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         if (!isProtectionActive || event == null) return
-        
+
         val packageName = event.packageName?.toString() ?: return
-        
+        val eventType = AccessibilityEvent.eventTypeToString(event.eventType)
+
         // Only process events from target apps
         if (!targetApps.contains(packageName)) {
             clearOverlays()
+            clearFullScreenBlockOverlay()
             return
         }
 
         val prefs = getSharedPreferences("GirlifiedPrefs", Context.MODE_PRIVATE)
         val isEnabled = prefs.getBoolean("accessibility_monitoring_enabled", true)
         if (!isEnabled) {
+            Log.d(DETECT_TAG, "Monitoring disabled in prefs — skipping $packageName")
             clearOverlays()
+            clearFullScreenBlockOverlay()
             return
         }
-        
+
+        Log.d(DETECT_TAG, "Accessibility event: type=$eventType package=$packageName")
         scheduleUpdate()
     }
 
@@ -124,8 +135,9 @@ class SaifeAccessibilityService : AccessibilityService() {
     private fun getActiveKeywords(): Set<String> {
         val defaultKeywords = setOf(
             "violence", "violent", "kill", "hurt", "attack", "abuse",
-            "hate", "harassment", "bully", "threat", "weapon",
-            "explicit", "graphic", "disturbing"
+            "hate", "harassment", "harass", "bully", "bullying", "threat",
+            "threaten", "threatening", "stalk", "stalking", "weapon",
+            "explicit", "graphic", "disturbing",
         )
         val prefs = getSharedPreferences("GirlifiedPrefs", Context.MODE_PRIVATE)
         val customKeywords = prefs.getStringSet("protection_keywords", null) ?: emptySet()
@@ -133,46 +145,78 @@ class SaifeAccessibilityService : AccessibilityService() {
     }
 
     private fun updateRedactionOverlays() {
-        val rootNode = rootInActiveWindow ?: return
+        val rootNode = rootInActiveWindow
+        if (rootNode == null) {
+            Log.d(DETECT_TAG, "No active window root — skipping scrape")
+            return
+        }
+
         val activeKeywords = getActiveKeywords()
-        
-        // Find all matching nodes containing keywords
+        val currentPackage = rootNode.packageName?.toString() ?: "unknown"
+        Log.d(DETECT_TAG, "Starting screen scrape for package=$currentPackage keywords=${activeKeywords.size}")
+
+        // Find all matching nodes containing keywords and collect all scraped texts
         val matchingNodes = mutableListOf<AccessibilityNodeInfo>()
-        findMatchingNodes(rootNode, activeKeywords, matchingNodes)
+        val allScrapedTexts = mutableListOf<String>()
+        traverseAndProcessNodes(rootNode, activeKeywords, matchingNodes, allScrapedTexts)
+
+        Log.d(
+            DETECT_TAG,
+            "Scrape complete: texts=${allScrapedTexts.size} keyword_matches=${matchingNodes.size}",
+        )
+
+        // Send scraped texts to Flutter
+        if (allScrapedTexts.isNotEmpty()) {
+            sendScrapedTextsToFlutter(allScrapedTexts, currentPackage)
+        } else {
+            Log.d(DETECT_TAG, "No visible text captured this pass")
+        }
         
-        // Clear current overlays
+        // Clear per-node overlays from previous pass
         clearOverlays()
-        
-        // Get screen dimensions to avoid drawing offscreen/empty rects
+
+        // Get screen dimensions
         val displayMetrics = resources.displayMetrics
         val screenWidth = displayMetrics.widthPixels
         val screenHeight = displayMetrics.heightPixels
-        
+
         var blockedAny = false
         var blockedCategory = "Harmful Content"
-        
+        var matchedKeyword = ""
+
         for (node in matchingNodes) {
-            val rect = Rect()
-            node.getBoundsInScreen(rect)
-            
-            // Validate bounds are inside the screen
-            if (rect.width() > 0 && rect.height() > 0 && 
-                rect.left >= 0 && rect.top >= 0 && 
-                rect.right <= screenWidth && rect.bottom <= screenHeight) {
-                
-                addRedactOverlay(rect)
-                blockedAny = true
-                
-                val text = node.text?.toString()?.lowercase() ?: ""
-                blockedCategory = determineCategory(text)
-            }
+            blockedAny = true
+            val text = (node.text?.toString() ?: node.contentDescription?.toString() ?: "").lowercase()
+            blockedCategory = determineCategory(text)
+            matchedKeyword = findMatchedKeyword(text, activeKeywords) ?: matchedKeyword
         }
-        
+
         if (blockedAny) {
-            val currentPackage = rootNode.packageName?.toString() ?: "Social App"
+            Log.d(DETECT_TAG, "Threat detected — showing full-screen block (keyword=$matchedKeyword)")
+            showFullScreenBlockOverlay(currentPackage, matchedKeyword, blockedCategory, screenWidth, screenHeight)
             sendNotificationToFlutter("content_blocked", currentPackage)
+            sendThreatDetectedBroadcast(currentPackage, matchedKeyword)
+        } else {
+            clearFullScreenBlockOverlay()
         }
     }
+
+    private fun findMatchedKeyword(text: String, keywords: Set<String>): String? {
+        return keywords.firstOrNull { text.contains(it) }
+    }
+
+    private fun sendThreatDetectedBroadcast(packageName: String, keyword: String) {
+        try {
+            val intent = Intent("com.girlified.saife.THREAT_DETECTED").apply {
+                setPackage(applicationContext.packageName)
+                putExtra("package", packageName)
+                putExtra("keyword", keyword)
+                putExtra("timestamp", System.currentTimeMillis())
+            }
+            sendBroadcast(intent)
+        } catch (e: Exception) {
+            Log.e(DETECT_TAG, "Error sending threat detected broadcast", e)
+        }
 
     private fun determineCategory(text: String): String {
         if (text.contains("porn") || text.contains("nsfw") || text.contains("sex") || text.contains("nudes") || text.contains("onlyfans")) {
@@ -187,23 +231,56 @@ class SaifeAccessibilityService : AccessibilityService() {
         return "Harassment"
     }
 
-    private fun findMatchingNodes(node: AccessibilityNodeInfo, keywords: Set<String>, result: MutableList<AccessibilityNodeInfo>) {
+    private fun sendScrapedTextsToFlutter(texts: List<String>, packageName: String) {
+        try {
+            val intent = Intent("com.girlified.saife.TEXT_SCRAPED").apply {
+                setPackage(applicationContext.packageName)
+                putStringArrayListExtra("texts", java.util.ArrayList(texts))
+                putExtra("package", packageName)
+                putExtra("timestamp", System.currentTimeMillis())
+            }
+            Log.d(DETECT_TAG, "Broadcasting ${texts.size} scraped strings to Flutter for $packageName")
+            sendBroadcast(intent)
+        } catch (e: Exception) {
+            Log.e(DETECT_TAG, "Error sending scraped texts to Flutter", e)
+        }
+    }
+
+    private fun traverseAndProcessNodes(
+        node: AccessibilityNodeInfo,
+        keywords: Set<String>,
+        matchingNodes: MutableList<AccessibilityNodeInfo>,
+        allScrapedTexts: MutableList<String>
+    ) {
         if (node.isVisibleToUser) {
-            val text = node.text?.toString()?.lowercase()
-            val desc = node.contentDescription?.toString()?.lowercase()
+            val text = node.text?.toString()
+            val desc = node.contentDescription?.toString()
             
-            val matchesText = text != null && keywords.any { text.contains(it) }
-            val matchesDesc = desc != null && keywords.any { desc.contains(it) }
+            if (!text.isNullOrBlank()) {
+                allScrapedTexts.add(text)
+                Log.d(DETECT_TAG, "Captured node text: $text")
+                
+                val lowerText = text.lowercase()
+                if (keywords.any { lowerText.contains(it) }) {
+                    matchingNodes.add(node)
+                }
+            }
             
-            if (matchesText || matchesDesc) {
-                result.add(node)
+            if (!desc.isNullOrBlank()) {
+                allScrapedTexts.add(desc)
+                Log.d(DETECT_TAG, "Captured node contentDescription: $desc")
+                
+                val lowerDesc = desc.lowercase()
+                if (keywords.any { lowerDesc.contains(it) }) {
+                    matchingNodes.add(node)
+                }
             }
         }
         
         for (i in 0 until node.childCount) {
             val child = node.getChild(i)
             if (child != null) {
-                findMatchingNodes(child, keywords, result)
+                traverseAndProcessNodes(child, keywords, matchingNodes, allScrapedTexts)
             }
         }
     }
@@ -219,58 +296,126 @@ class SaifeAccessibilityService : AccessibilityService() {
         activeOverlays.clear()
     }
 
-    private fun addRedactOverlay(rect: Rect) {
-        val context = this
-        val overlayView = TextView(context).apply {
-            text = "⚠️ [Redacted]"
-            setTextColor(Color.WHITE)
-            gravity = Gravity.CENTER
-            textSize = 10f
-            background = GradientDrawable().apply {
-                setColor(Color.parseColor("#FC1A1625")) // Dark purple background
-                cornerRadius = 8f
-                setStroke(2, Color.parseColor("#8B5CF6")) // Electric Lilac border
+    private fun clearFullScreenBlockOverlay() {
+        fullScreenBlockView?.let { view ->
+            try {
+                windowManager?.removeView(view)
+            } catch (e: Exception) {
+                // Ignore if already removed
             }
-            setPadding(6, 2, 6, 2)
+        }
+        fullScreenBlockView = null
+    }
+
+    private fun showFullScreenBlockOverlay(
+        appPackage: String,
+        matchedKeyword: String,
+        category: String,
+        screenWidth: Int,
+        screenHeight: Int,
+    ) {
+        if (fullScreenBlockView != null) return
+
+        val container = android.widget.LinearLayout(this).apply {
+            orientation = android.widget.LinearLayout.VERTICAL
+            gravity = Gravity.CENTER
+            setBackgroundColor(Color.parseColor("#E61A1625"))
+            setPadding(48, 48, 48, 48)
         }
 
-        val params = WindowManager.LayoutParams(
-            rect.width(),
-            rect.height(),
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
+        val card = android.widget.LinearLayout(this).apply {
+            orientation = android.widget.LinearLayout.VERTICAL
+            gravity = Gravity.CENTER_HORIZONTAL
+            background = GradientDrawable().apply {
+                setColor(Color.parseColor("#FF2D2640"))
+                cornerRadius = 48f
+                setStroke(4, Color.parseColor("#FF8B5CF6"))
+            }
+            setPadding(56, 56, 56, 56)
+        }
+
+        val icon = TextView(this).apply {
+            text = "🛡️"
+            textSize = 48f
+            gravity = Gravity.CENTER
+        }
+
+        val title = TextView(this).apply {
+            text = "Harmful Content Blocked"
+            setTextColor(Color.WHITE)
+            textSize = 22f
+            gravity = Gravity.CENTER
+            setPadding(0, 24, 0, 12)
+        }
+
+        val message = TextView(this).apply {
+            text = if (matchedKeyword.isNotEmpty()) {
+                "SaifeAI detected \"$matchedKeyword\" ($category) in $appPackage.\n\nTap below to dismiss this screen."
             } else {
-                @Suppress("DEPRECATION")
-                WindowManager.LayoutParams.TYPE_SYSTEM_ALERT
-            },
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
-                    WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or
-                    WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
-            PixelFormat.TRANSLUCENT
+                "SaifeAI intercepted harmful content in $appPackage.\n\nTap below to dismiss this screen."
+            }
+            setTextColor(Color.parseColor("#B3FFFFFF"))
+            textSize = 14f
+            gravity = Gravity.CENTER
+            setPadding(0, 0, 0, 32)
+        }
+
+        val dismissButton = TextView(this).apply {
+            text = "Dismiss & Continue"
+            setTextColor(Color.WHITE)
+            textSize = 16f
+            gravity = Gravity.CENTER
+            background = GradientDrawable().apply {
+                setColor(Color.parseColor("#FF8B5CF6"))
+                cornerRadius = 28f
+            }
+            setPadding(48, 28, 48, 28)
+            setOnClickListener {
+                Log.d(DETECT_TAG, "Full-screen block dismissed by user")
+                clearFullScreenBlockOverlay()
+            }
+        }
+
+        card.addView(icon)
+        card.addView(title)
+        card.addView(message)
+        card.addView(dismissButton)
+        container.addView(card)
+
+        val params = WindowManager.LayoutParams(
+            screenWidth,
+            screenHeight,
+            WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,
+            WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
+                    WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
+            PixelFormat.TRANSLUCENT,
         ).apply {
-            gravity = Gravity.TOP or Gravity.LEFT
-            x = rect.left
-            y = rect.top
+            gravity = Gravity.TOP or Gravity.START
+            x = 0
+            y = 0
         }
 
         try {
-            windowManager?.addView(overlayView, params)
-            activeOverlays.add(overlayView)
+            windowManager?.addView(container, params)
+            fullScreenBlockView = container
+            Log.d(DETECT_TAG, "Full-screen block overlay displayed")
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to add overlay at rect $rect", e)
+            Log.e(DETECT_TAG, "Failed to show full-screen block — check overlay permission", e)
         }
     }
 
     private fun sendNotificationToFlutter(event: String, data: String) {
         try {
             val intent = Intent("com.girlified.saife.CONTENT_BLOCKED").apply {
+                setPackage(applicationContext.packageName)
                 putExtra("event", event)
                 putExtra("data", data)
                 putExtra("timestamp", System.currentTimeMillis())
             }
+            Log.d(DETECT_TAG, "Broadcasting content_blocked to Flutter: $data")
             sendBroadcast(intent)
         } catch (e: Exception) {
-            Log.e(TAG, "Error sending notification to Flutter", e)
+            Log.e(DETECT_TAG, "Error sending notification to Flutter", e)
         }
     }
 
@@ -278,6 +423,7 @@ class SaifeAccessibilityService : AccessibilityService() {
         Log.d(TAG, "Girlified Service Interrupted")
         isProtectionActive = false
         clearOverlays()
+        clearFullScreenBlockOverlay()
     }
 
     override fun onDestroy() {
@@ -285,6 +431,7 @@ class SaifeAccessibilityService : AccessibilityService() {
         Log.d(TAG, "Girlified Service Destroyed")
         isProtectionActive = false
         clearOverlays()
+        clearFullScreenBlockOverlay()
         try {
             unregisterReceiver(protectionReceiver)
         } catch (e: Exception) {}

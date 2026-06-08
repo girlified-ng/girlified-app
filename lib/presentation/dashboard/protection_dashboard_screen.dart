@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:get/get.dart';
@@ -13,6 +14,7 @@ import 'package:girlified/core/constants/routes.dart';
 import 'package:girlified/core/constants/secrets.dart';
 import 'package:girlified/core/constants/sizes.dart';
 import 'package:girlified/core/providers/index.dart';
+import 'package:girlified/data/services/text_detection_pipeline.dart';
 
 class ProtectionDashboardScreen extends StatefulWidget {
   const ProtectionDashboardScreen({super.key});
@@ -30,6 +32,12 @@ class _ProtectionDashboardScreenState extends State<ProtectionDashboardScreen> w
 
   Timer? _statsTimer;
   final Random _random = Random();
+  final TextEditingController _testPhraseController = TextEditingController(
+    text: 'This is a threatening text',
+  );
+  bool _showThreatDebugPanel = kDebugMode;
+  int _titleTapCount = 0;
+  String? _lastMockResult;
 
   void _startStatsTimer() {
     _statsTimer?.cancel();
@@ -111,6 +119,7 @@ class _ProtectionDashboardScreenState extends State<ProtectionDashboardScreen> w
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _stopStatsTimer();
+    _testPhraseController.dispose();
     super.dispose();
   }
 
@@ -433,17 +442,27 @@ class _ProtectionDashboardScreenState extends State<ProtectionDashboardScreen> w
               // top: AppSizes.vertical_5,
               horizontal: AppSizes.horizontal_15,
             ),
-            child: const Column(
+            child: Column(
               children: [
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    SizedBox(width: AppSizes.horizontal_35),
-                    TitleText(
-                      size: 16,
-                      title: 'Protection',
+                    const SizedBox(width: AppSizes.horizontal_35),
+                    GestureDetector(
+                      onTap: () {
+                        if (!kDebugMode) return;
+                        _titleTapCount += 1;
+                        if (_titleTapCount >= 3) {
+                          setState(() => _showThreatDebugPanel = true);
+                          _titleTapCount = 0;
+                        }
+                      },
+                      child: const TitleText(
+                        size: 16,
+                        title: 'Protection',
+                      ),
                     ),
-                    SizedBox(width: AppSizes.horizontal_35),
+                    const SizedBox(width: AppSizes.horizontal_35),
                   ],
                 ),
               ],
@@ -894,7 +913,11 @@ class _ProtectionDashboardScreenState extends State<ProtectionDashboardScreen> w
                           ),
                         );
                       },
-                    )
+                    ),
+                    if (_showThreatDebugPanel) ...[
+                      const SizedBox(height: 24),
+                      _buildThreatDebugPanel(),
+                    ],
                   ],
                 ),
         ),
@@ -1009,6 +1032,109 @@ class _ProtectionDashboardScreenState extends State<ProtectionDashboardScreen> w
             color: isEnabled ? AppColors.tealColor : AppColors.grayColor,
             size: 20,
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildThreatDebugPanel() {
+    final pipeline = TextDetectionPipeline.instance;
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF7ED),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFFDBA74)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.bug_report_outlined, color: Color(0xFFEA580C), size: 20),
+              SizedBox(width: 8),
+              Text(
+                'Threat Detection Test (Debug)',
+                style: TextStyle(
+                  color: Color(0xFF9A3412),
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  fontFamily: 'SF Pro',
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Feeds a phrase directly into the RegEx validator and overlay blocker. '
+            'Filter Logcat with SAFETY_APP_DETECT, SAFETY_PIPELINE, or SAFETY_BLOCK.',
+            style: TextStyle(
+              color: Color(0xFF9A3412),
+              fontSize: 12,
+              fontFamily: 'SF Pro',
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _testPhraseController,
+            decoration: InputDecoration(
+              labelText: 'Test phrase',
+              filled: true,
+              fillColor: Colors.white,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () async {
+                final matched = await pipeline.runMockTest(
+                  _testPhraseController.text.trim(),
+                );
+                setState(() {
+                  _lastMockResult = matched
+                      ? 'Overlay triggered — matched "${pipeline.lastMatchedWord}"'
+                      : 'No threat detected';
+                });
+              },
+              icon: const Icon(Icons.shield_outlined),
+              label: const Text('Run Threat Test'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFEA580C),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Pipeline: ${pipeline.lastStage}',
+            style: const TextStyle(
+              color: Color(0xFF9A3412),
+              fontSize: 12,
+              fontFamily: 'SF Pro',
+            ),
+          ),
+          if (_lastMockResult != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              _lastMockResult!,
+              style: const TextStyle(
+                color: Color(0xFF9A3412),
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                fontFamily: 'SF Pro',
+              ),
+            ),
+          ],
         ],
       ),
     );

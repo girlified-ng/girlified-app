@@ -7,6 +7,8 @@ import 'package:girlified/core/constants/routes.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:girlified/data/repositories/index.dart';
 import 'package:girlified/core/themes/theme_provider.dart';
+import 'package:girlified/data/services/text_detection_pipeline.dart';
+import 'package:girlified/presentation/overlay/safety_overlay_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -46,8 +48,14 @@ class _MyAppState extends State<MyApp> {
   @override
   void initState() {
     rootRepository.initialize();
-
+    TextDetectionPipeline.instance.start();
     super.initState();
+  }
+
+  @override
+  void dispose() {
+    TextDetectionPipeline.instance.stop();
+    super.dispose();
   }
 
   @override
@@ -61,4 +69,15 @@ class _MyAppState extends State<MyApp> {
       debugShowCheckedModeBanner: false,
     );
   }
+}
+
+@pragma("vm:entry-point")
+void overlayMain() {
+  WidgetsFlutterBinding.ensureInitialized();
+  runApp(
+    const MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: SafetyOverlayScreen(),
+    ),
+  );
 }
