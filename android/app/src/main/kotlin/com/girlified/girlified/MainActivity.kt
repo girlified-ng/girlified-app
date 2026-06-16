@@ -8,9 +8,12 @@ import android.provider.Settings
 import android.accessibilityservice.AccessibilityServiceInfo
 import android.view.accessibility.AccessibilityManager
 import android.content.Context
+import android.os.Handler
+import android.os.Looper
 
 class MainActivity: FlutterActivity() {
     private lateinit var nativeMethodChannel: NativeMethodChannel
+    private val mainHandler = Handler(Looper.getMainLooper())
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -72,5 +75,36 @@ class MainActivity: FlutterActivity() {
                 }
             }
         }
+
+        deliverProtectionDashboardNavigation(intent)
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        deliverProtectionDashboardNavigation(intent)
+    }
+
+    private fun deliverProtectionDashboardNavigation(intent: Intent?) {
+        if (intent?.getBooleanExtra(SaifeAccessibilityService.EXTRA_OPEN_PROTECTION_DASHBOARD, false) != true) {
+            return
+        }
+
+        intent.removeExtra(SaifeAccessibilityService.EXTRA_OPEN_PROTECTION_DASHBOARD)
+        if (!::nativeMethodChannel.isInitialized) return
+
+        mainHandler.postDelayed({
+            try {
+                nativeMethodChannel.sendEvent(
+                    "open_protection_dashboard",
+                    mapOf(
+                        "event" to "open_protection_dashboard",
+                        "timestamp" to System.currentTimeMillis(),
+                    ),
+                )
+            } catch (e: Exception) {
+                android.util.Log.e("MainActivity", "Failed to notify Flutter of protection navigation", e)
+            }
+        }, 400)
     }
 }

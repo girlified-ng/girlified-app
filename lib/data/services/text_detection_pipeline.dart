@@ -1,5 +1,8 @@
 import 'dart:async';
 
+import 'package:get/get.dart';
+import 'package:girlified/core/constants/routes.dart';
+import 'package:girlified/core/providers/index.dart';
 import 'package:girlified/core/utilities/protection_keyword_store.dart';
 import 'package:girlified/core/utilities/threat_validator.dart';
 import 'package:girlified/data/services/native_service.dart';
@@ -51,13 +54,30 @@ class TextDetectionPipeline {
       final String keyword = event['keyword']?.toString() ?? '';
       lastMatchedWord = keyword.isNotEmpty ? keyword : null;
       lastStage = 'native_threat_detected';
-      print('[SAFETY_PIPELINE] Native already blocked screen; syncing Flutter overlay for "$keyword"');
-      if (keyword.isNotEmpty) {
-        await ThreatValidator.triggerOverlayBlocker(matchedWord: keyword);
-      }
+      // Native purple card is the only blocker — do not open a second Flutter overlay.
+      print('[SAFETY_PIPELINE] Native purple card active for "$keyword"');
     } else if (eventType == 'content_blocked') {
       lastStage = 'native_block:${event['data']}';
-      print('[SAFETY_PIPELINE] Native redaction overlay active for ${event['data']}');
+      print('[SAFETY_PIPELINE] Native purple card active for ${event['data']}');
+    } else if (eventType == 'open_protection_dashboard') {
+      lastStage = 'navigate_protection_dashboard';
+      await _returnToSaifeProtectionScreen();
+    }
+  }
+
+  /// Closes any Flutter overlay and navigates to the SaifeAI protection tab.
+  Future<void> _returnToSaifeProtectionScreen() async {
+    await ThreatValidator.closeOverlayIfActive();
+
+    try {
+      ServiceRegistry.commonRepository.currentScreenIndex.value = 0;
+
+      if (Get.currentRoute != AppRoutes.dashboardRoute) {
+        Get.offAllNamed(AppRoutes.dashboardRoute);
+      }
+    } catch (e, stack) {
+      print('[SAFETY_PIPELINE] Navigation to SaifeAI failed: $e\n$stack');
+      lastStage = 'navigation_error';
     }
   }
 
@@ -91,9 +111,9 @@ class TextDetectionPipeline {
       final String? matched = ThreatValidator.findThreatMatch(text);
       if (matched != null) {
         lastMatchedWord = matched;
-        lastStage = 'match_found';
-        print('[SAFETY_PIPELINE] Match "$matched" — triggering overlay immediately');
-        await ThreatValidator.triggerOverlayBlocker(matchedWord: matched);
+        lastStage = 'match_found_native_only';
+        // Native SaifeAccessibilityService shows the purple card — skip Flutter overlay.
+        print('[SAFETY_PIPELINE] Match "$matched" — native purple card handles blocking');
         return;
       }
     }

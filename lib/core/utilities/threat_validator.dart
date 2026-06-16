@@ -17,6 +17,19 @@ class ThreatValidator {
     return true;
   }
 
+  /// Closes the Flutter "display over apps" overlay if it is still open.
+  static Future<void> closeOverlayIfActive() async {
+    try {
+      final bool isActive = await FlutterOverlayWindow.isActive();
+      if (isActive) {
+        await FlutterOverlayWindow.closeOverlay();
+        print('[SAFETY_BLOCK] Closed stray Flutter overlay');
+      }
+    } catch (e) {
+      print('[SAFETY_BLOCK] Error closing overlay: $e');
+    }
+  }
+
   /// Shows the full-screen overlay window immediately on threat detection.
   static Future<void> triggerOverlayBlocker({String? matchedWord}) async {
     try {

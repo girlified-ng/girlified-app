@@ -28,6 +28,10 @@ class SaifeAccessibilityService : AccessibilityService() {
     private var isProtectionActive = false
     private val activeOverlays = mutableListOf<View>()
     private var fullScreenBlockView: View? = null
+    private var blockSuppressedUntilMs: Long = 0L
+    private var isNavigatingToSaife = false
+    private val blockSuppressDurationMs = 45_000L
+    private val overlayRemovalDelayMs = 150L
 
     // Target apps to monitor
     private val targetApps = setOf(
@@ -139,6 +143,18 @@ class SaifeAccessibilityService : AccessibilityService() {
     }
 
     private fun updateRedactionOverlays() {
+        if (isNavigatingToSaife) {
+            Log.d(DETECT_TAG, "Navigation to SaifeAI in progress — skipping scrape update")
+            return
+        }
+
+        if (System.currentTimeMillis() < blockSuppressedUntilMs) {
+            if (fullScreenBlockView != null) {
+                clearFullScreenBlockOverlay()
+            }
+            return
+        }
+
         val rootNode = rootInActiveWindow
         if (rootNode == null) {
             Log.d(DETECT_TAG, "No active window root — skipping scrape")
@@ -193,10 +209,17 @@ class SaifeAccessibilityService : AccessibilityService() {
         }
 
         if (blockedAny) {
+            if (fullScreenBlockView != null) {
+                return
+            }
             Log.d(DETECT_TAG, "Threat detected — showing full-screen block (keyword=$matchedKeyword)")
-            showFullScreenBlockOverlay(currentPackage, matchedKeyword, blockedCategory, screenWidth, screenHeight)
-            sendNotificationToFlutter("content_blocked", currentPackage)
-            sendThreatDetectedBroadcast(currentPackage, matchedKeyword)
+            val shown = showFullScreenBlockOverlay(
+                currentPackage, matchedKeyword, blockedCategory, screenWidth, screenHeight,
+            )
+            if (shown) {
+                sendNotificationToFlutter("content_blocked", currentPackage)
+                sendThreatDetectedBroadcast(currentPackage, matchedKeyword)
+            }
         } else {
             clearFullScreenBlockOverlay()
         }
@@ -304,10 +327,32 @@ class SaifeAccessibilityService : AccessibilityService() {
             try {
                 windowManager?.removeView(view)
             } catch (e: Exception) {
-                // Ignore if already removed
+                Log.w(DETECT_TAG, "Overlay view already removed", e)
             }
         }
         fullScreenBlockView = null
+    }
+
+    private fun dismissAndOpenSaifeApp() {
+        Log.d(DETECT_TAG, "Dismiss & Continue — opening SaifeAI")
+        blockSuppressedUntilMs = System.currentTimeMillis() + blockSuppressDurationMs
+        isNavigatingToSaife = true
+        clearFullScreenBlockOverlay()
+
+        handler.postDelayed({
+            try {
+                val launchIntent = Intent(applicationContext, MainActivity::class.java).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                    putExtra(EXTRA_OPEN_PROTECTION_DASHBOARD, true)
+                }
+                applicationContext.startActivity(launchIntent)
+            } catch (e: Exception) {
+                Log.e(DETECT_TAG, "Failed to launch SaifeAI", e)
+                isNavigatingToSaife = false
+            }
+        }, overlayRemovalDelayMs)
+
+        handler.postDelayed({ isNavigatingToSaife = false }, 2_000L)
     }
 
     private fun showFullScreenBlockOverlay(
@@ -316,8 +361,8 @@ class SaifeAccessibilityService : AccessibilityService() {
         category: String,
         screenWidth: Int,
         screenHeight: Int,
-    ) {
-        if (fullScreenBlockView != null) return
+    ): Boolean {
+        if (fullScreenBlockView != null) return false
 
         val container = android.widget.LinearLayout(this).apply {
             orientation = android.widget.LinearLayout.VERTICAL
@@ -353,9 +398,9 @@ class SaifeAccessibilityService : AccessibilityService() {
 
         val message = TextView(this).apply {
             text = if (matchedKeyword.isNotEmpty()) {
-                "SaifeAI detected \"$matchedKeyword\" ($category) in $appPackage.\n\nTap below to dismiss this screen."
+                "SaifeAI detected \"$matchedKeyword\" ($category) in $appPackage.\n\nTap below to return to SaifeAI."
             } else {
-                "SaifeAI intercepted harmful content in $appPackage.\n\nTap below to dismiss this screen."
+                "SaifeAI intercepted harmful content in $appPackage.\n\nTap below to return to SaifeAI."
             }
             setTextColor(Color.parseColor("#B3FFFFFF"))
             textSize = 14f
@@ -374,8 +419,7 @@ class SaifeAccessibilityService : AccessibilityService() {
             }
             setPadding(48, 28, 48, 28)
             setOnClickListener {
-                Log.d(DETECT_TAG, "Full-screen block dismissed by user")
-                clearFullScreenBlockOverlay()
+                dismissAndOpenSaifeApp()
             }
         }
 
@@ -398,12 +442,15 @@ class SaifeAccessibilityService : AccessibilityService() {
             y = 0
         }
 
-        try {
+        return try {
             windowManager?.addView(container, params)
             fullScreenBlockView = container
             Log.d(DETECT_TAG, "Full-screen block overlay displayed")
+            true
         } catch (e: Exception) {
             Log.e(DETECT_TAG, "Failed to show full-screen block — check overlay permission", e)
+            fullScreenBlockView = null
+            false
         }
     }
 
@@ -446,6 +493,8 @@ class SaifeAccessibilityService : AccessibilityService() {
     }
 
     companion object {
+        const val EXTRA_OPEN_PROTECTION_DASHBOARD = "open_protection_dashboard"
+
         fun isServiceEnabled(context: Context): Boolean {
             val packageName = context.packageName
             val serviceName = "$packageName/${SaifeAccessibilityService::class.java.canonicalName}"
