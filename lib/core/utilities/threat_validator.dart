@@ -1,25 +1,18 @@
 import 'package:flutter_overlay_window/flutter_overlay_window.dart';
+import 'package:girlified/core/utilities/protection_keyword_store.dart';
 
 class ThreatValidator {
-  /// Case-insensitive word-boundary matching for threatening terms.
-  static final RegExp threatRegExp = RegExp(
-    r'\b(kill|hurt|stalk|stalking|threat|threaten|threatening|attack|abuse|harass|harassment|bully|bullying|violence|violent|hate|weapon)\b',
-    caseSensitive: false,
-  );
-
-  /// Returns the matched threatening word, or null if the text is safe.
+  /// Returns the matched user keyword from GetStorage, or null if the text is safe.
   static String? findThreatMatch(String text) {
-    if (text.trim().isEmpty) return null;
-    final Match? match = threatRegExp.firstMatch(text);
-    return match?.group(0);
+    return ProtectionKeywordStore.findMatch(text);
   }
 
-  /// Validates text and triggers the overlay blocker when a threat is found.
+  /// Validates text and triggers the overlay blocker when a keyword is found.
   static Future<bool> validateAndBlock(String text) async {
     final String? matched = findThreatMatch(text);
     if (matched == null) return false;
 
-    print("[SAFETY_BLOCK] Threatening word matched: '$matched' in text: '$text'");
+    print("[SAFETY_BLOCK] User keyword matched: '$matched' in text: '$text'");
     await triggerOverlayBlocker(matchedWord: matched);
     return true;
   }
@@ -28,7 +21,7 @@ class ThreatValidator {
   static Future<void> triggerOverlayBlocker({String? matchedWord}) async {
     try {
       if (matchedWord != null) {
-        print("[SAFETY_BLOCK] Triggering overlay for matched word: '$matchedWord'");
+        print("[SAFETY_BLOCK] Triggering overlay for matched keyword: '$matchedWord'");
       }
 
       final bool isGranted = await FlutterOverlayWindow.isPermissionGranted();
@@ -52,7 +45,7 @@ class ThreatValidator {
         width: WindowSize.fullCover,
         overlayTitle: 'SaifeAI Protection',
         overlayContent: matchedWord != null
-            ? 'Blocked threatening content: $matchedWord'
+            ? 'Blocked content matching: $matchedWord'
             : 'Harmful content blocked',
       );
       print("[SAFETY_BLOCK] Overlay window triggered successfully.");

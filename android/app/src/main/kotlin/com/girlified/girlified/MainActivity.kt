@@ -51,7 +51,11 @@ class MainActivity: FlutterActivity() {
                     val editor = prefs.edit()
                     editor.putBoolean("accessibility_monitoring_enabled", true)
                     if (keywords != null) {
-                        editor.putStringSet("protection_keywords", keywords.toSet())
+                        val normalized = keywords
+                            .map { it.trim().lowercase() }
+                            .filter { it.isNotEmpty() }
+                            .toSet()
+                        editor.putStringSet("protection_keywords", normalized)
                     }
                     editor.apply()
                     

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:girlified/core/utilities/protection_keyword_store.dart';
 import 'package:girlified/core/utilities/threat_validator.dart';
 import 'package:girlified/data/services/native_service.dart';
 
@@ -71,7 +72,14 @@ class TextDetectionPipeline {
     }
 
     lastStage = 'validating';
-    print('[SAFETY_PIPELINE] Validating ${texts.length} scraped strings from $package');
+    final keywordCount = ProtectionKeywordStore.readKeywords().length;
+    print('[SAFETY_PIPELINE] Validating ${texts.length} scraped strings from $package ($keywordCount stored keywords)');
+
+    if (keywordCount == 0) {
+      lastStage = 'no_keywords_configured';
+      print('[SAFETY_PIPELINE] No keywords in GetStorage — skipping validation');
+      return;
+    }
 
     for (final dynamic raw in texts) {
       final String text = raw.toString();

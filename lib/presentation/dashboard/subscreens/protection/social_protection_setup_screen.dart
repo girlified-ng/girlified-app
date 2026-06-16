@@ -8,6 +8,7 @@ import 'package:girlified/core/constants/routes.dart';
 import 'package:girlified/core/providers/index.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:girlified/data/infra_sdk/account/lib/account_sdk.dart';
+import 'package:girlified/core/utilities/protection_keyword_store.dart';
 import 'package:girlified/core/utilities/protection_metrics.dart';
 
 class SocialProtectionSetupScreen extends StatefulWidget {
@@ -76,7 +77,15 @@ List<String> keywords =[
   void initState() {
     super.initState();
     initializeControllers();
+    _loadSavedKeywords();
     _checkPermissions();
+  }
+
+  void _loadSavedKeywords() {
+    final List<String> saved = ProtectionKeywordStore.readKeywords();
+    if (saved.isNotEmpty) {
+      setState(() => keywords = saved);
+    }
   }
 
   void initializeControllers() {
@@ -152,19 +161,20 @@ List<String> keywords =[
     });
   }
 
-  void _addKeyword(String keyword) {
-    if (keyword.isNotEmpty && !keywords.contains(keyword.toLowerCase())) {
-      setState(() {
-        keywords.add(keyword.toLowerCase());
-        keywordController.clear();
-      });
-    }
+  Future<void> _addKeyword(String keyword) async {
+    final String normalized = keyword.trim().toLowerCase();
+    if (normalized.isEmpty || keywords.contains(normalized)) return;
+
+    setState(() {
+      keywords.add(normalized);
+      keywordController.clear();
+    });
+    await ProtectionKeywordStore.saveAndSync(keywords);
   }
 
-  void _removeKeyword(String keyword) {
-    setState(() {
-      keywords.remove(keyword);
-    });
+  Future<void> _removeKeyword(String keyword) async {
+    setState(() => keywords.remove(keyword));
+    await ProtectionKeywordStore.saveAndSync(keywords);
   }
 
   Future<void> _handleProtect() async {
@@ -183,10 +193,9 @@ List<String> keywords =[
     await ServiceRegistry.localStorage.write('protection_pin', enteredPin);
     
     // Save Keywords
-    await ServiceRegistry.localStorage.write('protection_keywords', keywords);
+    await ProtectionKeywordStore.saveAndSync(keywords);
 
-    // Call Native Service
-    await ServiceRegistry.digitalSafeguardService.startDigitalSafeguard(keywords);
+    // Call Native Service (already synced inside saveAndSync)
 
     final steps = [
       'Connecting to Social Accounts...',

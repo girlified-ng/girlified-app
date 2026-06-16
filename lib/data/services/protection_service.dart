@@ -3,7 +3,9 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:get_storage/get_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:girlified/core/utilities/protection_keyword_store.dart';
 import 'package:girlified/data/services/tflite_service.dart';
 
 class ProtectionService {
@@ -191,7 +193,17 @@ class ProtectionService {
   // Background service entry point
   @pragma('vm:entry-point')
   static void onStart(ServiceInstance service) async {
+    WidgetsFlutterBinding.ensureInitialized();
     DartPluginRegistrant.ensureInitialized();
+    await GetStorage.init();
+
+    final keywordCount = ProtectionKeywordStore.readKeywords().length;
+    print('[SAFETY_PIPELINE] Background isolate ready — $keywordCount keywords loaded from GetStorage');
+
+    service.on('updateKeywords').listen((_) {
+      final count = ProtectionKeywordStore.readKeywords().length;
+      print('[SAFETY_PIPELINE] Background isolate refreshed keywords — $count active');
+    });
 
     final tfliteService = TFLiteService();
     await tfliteService.initialize();

@@ -133,15 +133,9 @@ class SaifeAccessibilityService : AccessibilityService() {
     }
 
     private fun getActiveKeywords(): Set<String> {
-        val defaultKeywords = setOf(
-            "violence", "violent", "kill", "hurt", "attack", "abuse",
-            "hate", "harassment", "harass", "bully", "bullying", "threat",
-            "threaten", "threatening", "stalk", "stalking", "weapon",
-            "explicit", "graphic", "disturbing",
-        )
         val prefs = getSharedPreferences("GirlifiedPrefs", Context.MODE_PRIVATE)
-        val customKeywords = prefs.getStringSet("protection_keywords", null) ?: emptySet()
-        return defaultKeywords + customKeywords
+        val stored = prefs.getStringSet("protection_keywords", emptySet()) ?: emptySet()
+        return stored.map { it.trim().lowercase() }.filter { it.isNotEmpty() }.toSet()
     }
 
     private fun updateRedactionOverlays() {
@@ -153,6 +147,13 @@ class SaifeAccessibilityService : AccessibilityService() {
 
         val activeKeywords = getActiveKeywords()
         val currentPackage = rootNode.packageName?.toString() ?: "unknown"
+
+        if (activeKeywords.isEmpty()) {
+            Log.d(DETECT_TAG, "No keywords in SharedPreferences — skipping scrape for $currentPackage")
+            clearFullScreenBlockOverlay()
+            return
+        }
+
         Log.d(DETECT_TAG, "Starting screen scrape for package=$currentPackage keywords=${activeKeywords.size}")
 
         // Find all matching nodes containing keywords and collect all scraped texts
@@ -202,7 +203,8 @@ class SaifeAccessibilityService : AccessibilityService() {
     }
 
     private fun findMatchedKeyword(text: String, keywords: Set<String>): String? {
-        return keywords.firstOrNull { text.contains(it) }
+        val lowerText = text.lowercase()
+        return keywords.firstOrNull { kw -> lowerText.contains(kw.lowercase()) }
     }
 
     private fun sendThreatDetectedBroadcast(packageName: String, keyword: String) {
@@ -217,6 +219,7 @@ class SaifeAccessibilityService : AccessibilityService() {
         } catch (e: Exception) {
             Log.e(DETECT_TAG, "Error sending threat detected broadcast", e)
         }
+    }
 
     private fun determineCategory(text: String): String {
         if (text.contains("porn") || text.contains("nsfw") || text.contains("sex") || text.contains("nudes") || text.contains("onlyfans")) {
