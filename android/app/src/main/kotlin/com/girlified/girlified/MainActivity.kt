@@ -70,6 +70,24 @@ class MainActivity: FlutterActivity() {
 
                     result.success(true)
                 }
+                "returnToSaifeApp" -> {
+                    try {
+                        val dismissIntent = Intent("com.girlified.saife.DISMISS_BLOCK_OVERLAY").apply {
+                            setPackage(packageName)
+                        }
+                        sendBroadcast(dismissIntent)
+
+                        val launchIntent = Intent(applicationContext, MainActivity::class.java).apply {
+                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                            putExtra(SaifeAccessibilityService.EXTRA_OPEN_PROTECTION_DASHBOARD, true)
+                        }
+                        applicationContext.startActivity(launchIntent)
+                        result.success(true)
+                    } catch (e: Exception) {
+                        android.util.Log.e("MainActivity", "returnToSaifeApp failed", e)
+                        result.success(false)
+                    }
+                }
                 else -> {
                     result.notImplemented()
                 }

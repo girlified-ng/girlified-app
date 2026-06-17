@@ -1,10 +1,12 @@
 import 'dart:async';
 
+import 'package:flutter_overlay_window/flutter_overlay_window.dart';
 import 'package:get/get.dart';
 import 'package:girlified/core/constants/routes.dart';
 import 'package:girlified/core/providers/index.dart';
 import 'package:girlified/core/utilities/protection_keyword_store.dart';
 import 'package:girlified/core/utilities/threat_validator.dart';
+import 'package:girlified/data/services/digital_safeguard_service.dart';
 import 'package:girlified/data/services/native_service.dart';
 
 /// Bridges native scraped text → Dart threat validation → overlay blocker.
@@ -13,6 +15,7 @@ class TextDetectionPipeline {
   static final TextDetectionPipeline instance = TextDetectionPipeline._();
 
   StreamSubscription<Map<String, dynamic>>? _subscription;
+  StreamSubscription<dynamic>? _overlaySubscription;
   bool _isListening = false;
 
   /// Last pipeline stage reached — useful for debug UI.
@@ -35,13 +38,35 @@ class TextDetectionPipeline {
       },
       cancelOnError: false,
     );
+
+    _overlaySubscription = FlutterOverlayWindow.overlayListener.listen(
+      (dynamic data) {
+        if (data is Map && data['action'] == 'return_to_saife') {
+          _handleOverlayReturnToSaife();
+        }
+      },
+    );
   }
 
   void stop() {
     _subscription?.cancel();
     _subscription = null;
+    _overlaySubscription?.cancel();
+    _overlaySubscription = null;
     _isListening = false;
     lastStage = 'stopped';
+  }
+
+  /// One-tap exit from the Flutter overlay: dismiss all blockers and open SaifeAI.
+  Future<void> _handleOverlayReturnToSaife() async {
+    lastStage = 'overlay_return_to_saife';
+    try {
+      await ThreatValidator.closeOverlayIfActive();
+      await DigitalSafeguardService().returnToSaifeApp();
+    } catch (e, stack) {
+      print('[SAFETY_PIPELINE] Overlay return to SaifeAI failed: $e\n$stack');
+      lastStage = 'navigation_error';
+    }
   }
 
   Future<void> _onNativeEvent(Map<String, dynamic> event) async {
@@ -54,7 +79,7 @@ class TextDetectionPipeline {
       final String keyword = event['keyword']?.toString() ?? '';
       lastMatchedWord = keyword.isNotEmpty ? keyword : null;
       lastStage = 'native_threat_detected';
-      // Native purple card is the only blocker — do not open a second Flutter overlay.
+      // Native purple card handles live blocking — skip Flutter overlay to avoid stacking.
       print('[SAFETY_PIPELINE] Native purple card active for "$keyword"');
     } else if (eventType == 'content_blocked') {
       lastStage = 'native_block:${event['data']}';
@@ -67,12 +92,14 @@ class TextDetectionPipeline {
 
   /// Closes any Flutter overlay and navigates to the SaifeAI protection tab.
   Future<void> _returnToSaifeProtectionScreen() async {
-    await ThreatValidator.closeOverlayIfActive();
-
     try {
+      await ThreatValidator.closeOverlayIfActive();
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
       ServiceRegistry.commonRepository.currentScreenIndex.value = 0;
 
-      if (Get.currentRoute != AppRoutes.dashboardRoute) {
+      final String? currentRoute = Get.currentRoute;
+      if (currentRoute != null && currentRoute != AppRoutes.dashboardRoute) {
         Get.offAllNamed(AppRoutes.dashboardRoute);
       }
     } catch (e, stack) {

@@ -29,9 +29,7 @@ class SaifeAccessibilityService : AccessibilityService() {
     private val activeOverlays = mutableListOf<View>()
     private var fullScreenBlockView: View? = null
     private var blockSuppressedUntilMs: Long = 0L
-    private var isNavigatingToSaife = false
     private val blockSuppressDurationMs = 45_000L
-    private val overlayRemovalDelayMs = 150L
 
     // Target apps to monitor
     private val targetApps = setOf(
@@ -43,18 +41,23 @@ class SaifeAccessibilityService : AccessibilityService() {
         "com.snapchat.android"           // Snapchat
     )
 
-    private val protectionReceiver = object : BroadcastReceiver() {
+    private val controlReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
-            if (intent?.action == "com.girlified.saife.SET_PROTECTION") {
-                val active = intent.getBooleanExtra("active", false)
-                isProtectionActive = active
-                if (!active) {
-                    clearOverlays()
-                    clearFullScreenBlockOverlay()
-                } else {
-                    scheduleUpdate()
+            when (intent?.action) {
+                "com.girlified.saife.SET_PROTECTION" -> {
+                    val active = intent.getBooleanExtra("active", false)
+                    isProtectionActive = active
+                    if (!active) {
+                        clearOverlays()
+                        clearFullScreenBlockOverlay()
+                    } else {
+                        scheduleUpdate()
+                    }
+                    Log.d(TAG, "Protection active set to: $isProtectionActive via broadcast")
                 }
-                Log.d(TAG, "Protection active set to: $isProtectionActive via broadcast")
+                "com.girlified.saife.DISMISS_BLOCK_OVERLAY" -> {
+                    dismissBlockOverlayOnly()
+                }
             }
         }
     }
@@ -90,11 +93,14 @@ class SaifeAccessibilityService : AccessibilityService() {
 
         // Register receiver for active state changes
         try {
-            val filter = IntentFilter("com.girlified.saife.SET_PROTECTION")
+            val filter = IntentFilter().apply {
+                addAction("com.girlified.saife.SET_PROTECTION")
+                addAction("com.girlified.saife.DISMISS_BLOCK_OVERLAY")
+            }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                registerReceiver(protectionReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
+                registerReceiver(controlReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
             } else {
-                registerReceiver(protectionReceiver, filter)
+                registerReceiver(controlReceiver, filter)
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error registering receiver", e)
@@ -109,10 +115,9 @@ class SaifeAccessibilityService : AccessibilityService() {
         val packageName = event.packageName?.toString() ?: return
         val eventType = AccessibilityEvent.eventTypeToString(event.eventType)
 
-        // Only process events from target apps
+        // Only process events from target apps — do not tear down block overlay mid-cooldown.
         if (!targetApps.contains(packageName)) {
             clearOverlays()
-            clearFullScreenBlockOverlay()
             return
         }
 
@@ -143,23 +148,18 @@ class SaifeAccessibilityService : AccessibilityService() {
     }
 
     private fun updateRedactionOverlays() {
-        if (isNavigatingToSaife) {
-            Log.d(DETECT_TAG, "Navigation to SaifeAI in progress — skipping scrape update")
-            return
-        }
-
-        if (System.currentTimeMillis() < blockSuppressedUntilMs) {
-            if (fullScreenBlockView != null) {
-                clearFullScreenBlockOverlay()
+        try {
+            if (System.currentTimeMillis() < blockSuppressedUntilMs) {
+                if (fullScreenBlockView != null) {
+                    clearFullScreenBlockOverlay()
+                }
+                return
             }
-            return
-        }
 
-        val rootNode = rootInActiveWindow
-        if (rootNode == null) {
-            Log.d(DETECT_TAG, "No active window root — skipping scrape")
-            return
-        }
+            val rootNode = rootInActiveWindow ?: run {
+                Log.d(DETECT_TAG, "No active window root — skipping scrape")
+                return
+            }
 
         val activeKeywords = getActiveKeywords()
         val currentPackage = rootNode.packageName?.toString() ?: "unknown"
@@ -182,10 +182,10 @@ class SaifeAccessibilityService : AccessibilityService() {
             "Scrape complete: texts=${allScrapedTexts.size} keyword_matches=${matchingNodes.size}",
         )
 
-        // Send scraped texts to Flutter
-        if (allScrapedTexts.isNotEmpty()) {
+        // Send scraped texts to Flutter only when not already blocking (reduces pipeline churn).
+        if (fullScreenBlockView == null && allScrapedTexts.isNotEmpty()) {
             sendScrapedTextsToFlutter(allScrapedTexts, currentPackage)
-        } else {
+        } else if (allScrapedTexts.isEmpty()) {
             Log.d(DETECT_TAG, "No visible text captured this pass")
         }
         
@@ -222,6 +222,9 @@ class SaifeAccessibilityService : AccessibilityService() {
             }
         } else {
             clearFullScreenBlockOverlay()
+        }
+        } catch (e: Exception) {
+            Log.e(DETECT_TAG, "Error during overlay update — skipping pass", e)
         }
     }
 
@@ -278,36 +281,34 @@ class SaifeAccessibilityService : AccessibilityService() {
         matchingNodes: MutableList<AccessibilityNodeInfo>,
         allScrapedTexts: MutableList<String>
     ) {
-        if (node.isVisibleToUser) {
-            val text = node.text?.toString()
-            val desc = node.contentDescription?.toString()
-            
-            if (!text.isNullOrBlank()) {
-                allScrapedTexts.add(text)
-                Log.d(DETECT_TAG, "Captured node text: $text")
-                
-                val lowerText = text.lowercase()
-                if (keywords.any { lowerText.contains(it) }) {
-                    matchingNodes.add(node)
+        try {
+            if (node.isVisibleToUser) {
+                val text = node.text?.toString()
+                val desc = node.contentDescription?.toString()
+
+                if (!text.isNullOrBlank()) {
+                    allScrapedTexts.add(text)
+                    val lowerText = text.lowercase()
+                    if (keywords.any { lowerText.contains(it) }) {
+                        matchingNodes.add(node)
+                    }
+                }
+
+                if (!desc.isNullOrBlank()) {
+                    allScrapedTexts.add(desc)
+                    val lowerDesc = desc.lowercase()
+                    if (keywords.any { lowerDesc.contains(it) }) {
+                        matchingNodes.add(node)
+                    }
                 }
             }
-            
-            if (!desc.isNullOrBlank()) {
-                allScrapedTexts.add(desc)
-                Log.d(DETECT_TAG, "Captured node contentDescription: $desc")
-                
-                val lowerDesc = desc.lowercase()
-                if (keywords.any { lowerDesc.contains(it) }) {
-                    matchingNodes.add(node)
-                }
-            }
-        }
-        
-        for (i in 0 until node.childCount) {
-            val child = node.getChild(i)
-            if (child != null) {
+
+            for (i in 0 until node.childCount) {
+                val child = node.getChild(i) ?: continue
                 traverseAndProcessNodes(child, keywords, matchingNodes, allScrapedTexts)
             }
+        } catch (e: Exception) {
+            Log.w(DETECT_TAG, "Node traversal error — continuing", e)
         }
     }
 
@@ -333,26 +334,17 @@ class SaifeAccessibilityService : AccessibilityService() {
         fullScreenBlockView = null
     }
 
-    private fun dismissAndOpenSaifeApp() {
-        Log.d(DETECT_TAG, "Dismiss & Continue — opening SaifeAI")
+    private fun dismissBlockOverlayOnly() {
         blockSuppressedUntilMs = System.currentTimeMillis() + blockSuppressDurationMs
-        isNavigatingToSaife = true
+        handler.removeCallbacks(updateRunnable)
+        pendingUpdate = false
         clearFullScreenBlockOverlay()
+        Log.d(DETECT_TAG, "Block overlay dismissed — ${blockSuppressDurationMs / 1000}s cooldown")
+    }
 
-        handler.postDelayed({
-            try {
-                val launchIntent = Intent(applicationContext, MainActivity::class.java).apply {
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
-                    putExtra(EXTRA_OPEN_PROTECTION_DASHBOARD, true)
-                }
-                applicationContext.startActivity(launchIntent)
-            } catch (e: Exception) {
-                Log.e(DETECT_TAG, "Failed to launch SaifeAI", e)
-                isNavigatingToSaife = false
-            }
-        }, overlayRemovalDelayMs)
-
-        handler.postDelayed({ isNavigatingToSaife = false }, 2_000L)
+    private fun dismissAndContinue() {
+        Log.d(DETECT_TAG, "Dismiss & Continue — user stays in social app")
+        handler.post { dismissBlockOverlayOnly() }
     }
 
     private fun showFullScreenBlockOverlay(
@@ -398,9 +390,9 @@ class SaifeAccessibilityService : AccessibilityService() {
 
         val message = TextView(this).apply {
             text = if (matchedKeyword.isNotEmpty()) {
-                "SaifeAI detected \"$matchedKeyword\" ($category) in $appPackage.\n\nTap below to return to SaifeAI."
+                "SaifeAI detected \"$matchedKeyword\" ($category).\n\nDismiss to scroll away — protection pauses for 45 seconds."
             } else {
-                "SaifeAI intercepted harmful content in $appPackage.\n\nTap below to return to SaifeAI."
+                "SaifeAI intercepted harmful content.\n\nDismiss to scroll away — protection pauses for 45 seconds."
             }
             setTextColor(Color.parseColor("#B3FFFFFF"))
             textSize = 14f
@@ -419,7 +411,7 @@ class SaifeAccessibilityService : AccessibilityService() {
             }
             setPadding(48, 28, 48, 28)
             setOnClickListener {
-                dismissAndOpenSaifeApp()
+                dismissAndContinue()
             }
         }
 
@@ -483,7 +475,7 @@ class SaifeAccessibilityService : AccessibilityService() {
         clearOverlays()
         clearFullScreenBlockOverlay()
         try {
-            unregisterReceiver(protectionReceiver)
+            unregisterReceiver(controlReceiver)
         } catch (e: Exception) {}
     }
 

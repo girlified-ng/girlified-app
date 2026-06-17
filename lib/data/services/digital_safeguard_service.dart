@@ -39,6 +39,17 @@ class DigitalSafeguardService {
     return false;
   }
 
+  /// Brings SaifeAI to the foreground, dismisses native block overlay, and opens protection tab.
+  Future<bool> returnToSaifeApp() async {
+    try {
+      final bool result = await _channel.invokeMethod('returnToSaifeApp');
+      return result;
+    } on PlatformException catch (e) {
+      print("Failed to return to SaifeAI: '${e.message}'.");
+    }
+    return false;
+  }
+
   /// Tears down active network blocks and interface observers.
   Future<bool> stopDigitalSafeguard() async {
     try {
