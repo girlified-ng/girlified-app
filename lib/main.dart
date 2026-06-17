@@ -8,7 +8,6 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:girlified/data/repositories/index.dart';
 import 'package:girlified/core/themes/theme_provider.dart';
 import 'package:girlified/data/services/text_detection_pipeline.dart';
-import 'package:girlified/presentation/overlay/safety_overlay_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -77,7 +76,7 @@ void overlayMain() {
   runApp(
     const MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: SafetyOverlayScreen(),
+      home: SizedBox.shrink(),
     ),
   );
 }

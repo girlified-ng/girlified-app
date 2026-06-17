@@ -15,6 +15,7 @@ import 'package:girlified/core/constants/secrets.dart';
 import 'package:girlified/core/constants/sizes.dart';
 import 'package:girlified/core/providers/index.dart';
 import 'package:girlified/data/services/text_detection_pipeline.dart';
+import 'package:girlified/presentation/widgets/inline_blur_reveal_content.dart';
 
 class ProtectionDashboardScreen extends StatefulWidget {
   const ProtectionDashboardScreen({super.key});
@@ -38,6 +39,8 @@ class _ProtectionDashboardScreenState extends State<ProtectionDashboardScreen> w
   bool _showThreatDebugPanel = kDebugMode;
   int _titleTapCount = 0;
   String? _lastMockResult;
+  bool _showInlinePreview = false;
+  String? _previewMatchedKeyword;
 
   void _startStatsTimer() {
     _statsTimer?.cancel();
@@ -1067,8 +1070,8 @@ class _ProtectionDashboardScreenState extends State<ProtectionDashboardScreen> w
           ),
           const SizedBox(height: 8),
           const Text(
-            'Feeds a phrase directly into the RegEx validator and overlay blocker. '
-            'Filter Logcat with SAFETY_APP_DETECT, SAFETY_PIPELINE, or SAFETY_BLOCK.',
+            'Validates a phrase and previews the inline blur-and-reveal mask. '
+            'On social apps, SaifeAI applies the same pattern natively per post.',
             style: TextStyle(
               color: Color(0xFF9A3412),
               fontSize: 12,
@@ -1097,8 +1100,10 @@ class _ProtectionDashboardScreenState extends State<ProtectionDashboardScreen> w
                   _testPhraseController.text.trim(),
                 );
                 setState(() {
+                  _showInlinePreview = matched;
+                  _previewMatchedKeyword = pipeline.lastMatchedWord;
                   _lastMockResult = matched
-                      ? 'Overlay triggered — matched "${pipeline.lastMatchedWord}"'
+                      ? 'Flagged — inline mask preview below ("${pipeline.lastMatchedWord}")'
                       : 'No threat detected';
                 });
               },
@@ -1115,6 +1120,22 @@ class _ProtectionDashboardScreenState extends State<ProtectionDashboardScreen> w
             ),
           ),
           const SizedBox(height: 12),
+          if (_showInlinePreview) ...[
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: const Color(0xFF2D2640),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFF8B5CF6)),
+              ),
+              child: InlineBlurRevealContent(
+                text: _testPhraseController.text.trim(),
+                matchedKeyword: _previewMatchedKeyword,
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
           Text(
             'Pipeline: ${pipeline.lastStage}',
             style: const TextStyle(
