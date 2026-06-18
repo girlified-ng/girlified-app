@@ -46,6 +46,9 @@ class TextDetectionPipeline {
 
     if (eventType == 'text_scraped') {
       await _handleScrapedTexts(event);
+    } else if (eventType == 'content_blocked') {
+      lastStage = 'full_page_block:${event['data']}';
+      print('[SAFETY_PIPELINE] Full-page warning active for ${event['data']}');
     }
   }
 

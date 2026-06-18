@@ -15,7 +15,7 @@ import 'package:girlified/core/constants/secrets.dart';
 import 'package:girlified/core/constants/sizes.dart';
 import 'package:girlified/core/providers/index.dart';
 import 'package:girlified/data/services/text_detection_pipeline.dart';
-import 'package:girlified/presentation/widgets/inline_blur_reveal_content.dart';
+import 'package:girlified/presentation/widgets/full_page_warning_content.dart';
 
 class ProtectionDashboardScreen extends StatefulWidget {
   const ProtectionDashboardScreen({super.key});
@@ -1070,8 +1070,7 @@ class _ProtectionDashboardScreenState extends State<ProtectionDashboardScreen> w
           ),
           const SizedBox(height: 8),
           const Text(
-            'Validates a phrase and previews the inline blur-and-reveal mask. '
-            'On social apps, SaifeAI applies the same pattern natively per post.',
+            'Validates a phrase and previews the full-page warning block shown in social apps.',
             style: TextStyle(
               color: Color(0xFF9A3412),
               fontSize: 12,
@@ -1103,7 +1102,7 @@ class _ProtectionDashboardScreenState extends State<ProtectionDashboardScreen> w
                   _showInlinePreview = matched;
                   _previewMatchedKeyword = pipeline.lastMatchedWord;
                   _lastMockResult = matched
-                      ? 'Flagged — inline mask preview below ("${pipeline.lastMatchedWord}")'
+                      ? 'Flagged — full-page warning preview below ("${pipeline.lastMatchedWord}")'
                       : 'No threat detected';
                 });
               },
@@ -1129,9 +1128,20 @@ class _ProtectionDashboardScreenState extends State<ProtectionDashboardScreen> w
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: const Color(0xFF8B5CF6)),
               ),
-              child: InlineBlurRevealContent(
-                text: _testPhraseController.text.trim(),
+              child: FullPageWarningContent(
                 matchedKeyword: _previewMatchedKeyword,
+                onContinue: () {
+                  setState(() {
+                    _showInlinePreview = false;
+                    _lastMockResult = 'Continue tapped — would dismiss block in social app';
+                  });
+                },
+                onExitApp: () {
+                  setState(() {
+                    _showInlinePreview = false;
+                    _lastMockResult = 'Exit App tapped — would leave social app';
+                  });
+                },
               ),
             ),
             const SizedBox(height: 12),

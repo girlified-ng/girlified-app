@@ -6,7 +6,6 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.graphics.Rect
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
@@ -14,17 +13,17 @@ import android.util.Log
 import android.view.WindowManager
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
-import com.girlified.girlified.moderation.FlaggedContent
-import com.girlified.girlified.moderation.InlineModerationState
-import com.girlified.girlified.moderation.InlineOverlayManager
+import com.girlified.girlified.moderation.FullPageWarningOverlayManager
 
 class SaifeAccessibilityService : AccessibilityService() {
 
     private val TAG = "SaifeAccessibility"
     private val DETECT_TAG = "SAFETY_APP_DETECT"
     private var windowManager: WindowManager? = null
-    private var inlineOverlayManager: InlineOverlayManager? = null
+    private var fullPageOverlayManager: FullPageWarningOverlayManager? = null
     private var isProtectionActive = false
+    private var blockSuppressedUntilMs: Long = 0L
+    private val blockSuppressDurationMs = 45_000L
 
     private val targetApps = setOf(
         "com.zhiliaoapp.musically",
@@ -42,14 +41,14 @@ class SaifeAccessibilityService : AccessibilityService() {
                     val active = intent.getBooleanExtra("active", false)
                     isProtectionActive = active
                     if (!active) {
-                        inlineOverlayManager?.resetSession()
+                        fullPageOverlayManager?.dismiss()
                     } else {
                         scheduleUpdate()
                     }
                     Log.d(TAG, "Protection active set to: $isProtectionActive via broadcast")
                 }
                 "com.girlified.saife.DISMISS_BLOCK_OVERLAY" -> {
-                    inlineOverlayManager?.clearAll()
+                    fullPageOverlayManager?.dismiss()
                 }
             }
         }
@@ -59,7 +58,7 @@ class SaifeAccessibilityService : AccessibilityService() {
     private var pendingUpdate = false
     private val updateRunnable = Runnable {
         pendingUpdate = false
-        updateInlineModeration()
+        updateContentModeration()
     }
 
     override fun onServiceConnected() {
@@ -80,7 +79,14 @@ class SaifeAccessibilityService : AccessibilityService() {
         serviceInfo = info
         isProtectionActive = true
         windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
-        inlineOverlayManager = windowManager?.let { InlineOverlayManager(it, this) }
+        fullPageOverlayManager = windowManager?.let { wm ->
+            FullPageWarningOverlayManager(
+                windowManager = wm,
+                context = this,
+                onContinue = { onContinueInSocialApp() },
+                onExitApp = { exitSocialMediaApp() },
+            )
+        }
 
         try {
             val filter = IntentFilter().apply {
@@ -104,13 +110,12 @@ class SaifeAccessibilityService : AccessibilityService() {
 
         val packageName = event.packageName?.toString() ?: return
         if (!targetApps.contains(packageName)) {
-            inlineOverlayManager?.clearAll()
             return
         }
 
         val prefs = getSharedPreferences("GirlifiedPrefs", Context.MODE_PRIVATE)
         if (!prefs.getBoolean("accessibility_monitoring_enabled", true)) {
-            inlineOverlayManager?.clearAll()
+            fullPageOverlayManager?.dismiss()
             return
         }
 
@@ -130,85 +135,98 @@ class SaifeAccessibilityService : AccessibilityService() {
         return stored.map { it.trim().lowercase() }.filter { it.isNotEmpty() }.toSet()
     }
 
-    private fun updateInlineModeration() {
+    private fun updateContentModeration() {
         try {
-            val manager = inlineOverlayManager ?: return
-            val rootNode = rootInActiveWindow ?: run {
-                manager.clearAll()
+            val manager = fullPageOverlayManager ?: return
+
+            if (System.currentTimeMillis() < blockSuppressedUntilMs) {
+                if (manager.isShowing) manager.dismiss()
                 return
             }
 
+            if (manager.isShowing) return
+
+            val rootNode = rootInActiveWindow ?: return
             val activeKeywords = getActiveKeywords()
             val currentPackage = rootNode.packageName?.toString() ?: "unknown"
 
             if (activeKeywords.isEmpty()) {
-                manager.clearAll()
+                manager.dismiss()
                 return
             }
 
             val allScrapedTexts = mutableListOf<String>()
-            val flaggedItems = mutableListOf<FlaggedContent>()
-            collectFlaggedContent(rootNode, activeKeywords, currentPackage, flaggedItems, allScrapedTexts)
+            var matchedKeyword = ""
 
-            val dedupedFlagged = flaggedItems.distinctBy { it.key }
-
-            Log.d(
-                DETECT_TAG,
-                "Inline moderation pass: texts=${allScrapedTexts.size} flagged=${dedupedFlagged.size}",
-            )
+            collectTextsAndMatch(rootNode, activeKeywords, allScrapedTexts) { keyword ->
+                matchedKeyword = keyword
+            }
 
             if (allScrapedTexts.isNotEmpty()) {
                 sendScrapedTextsToFlutter(allScrapedTexts, currentPackage)
             }
 
-            if (dedupedFlagged.isNotEmpty()) {
-                manager.syncMasks(dedupedFlagged)
-            } else {
-                manager.syncMasks(emptyList())
+            if (matchedKeyword.isEmpty()) {
+                return
+            }
+
+            val metrics = resources.displayMetrics
+            val shown = manager.show(matchedKeyword, metrics.widthPixels, metrics.heightPixels)
+            if (shown) {
+                sendContentBlockedBroadcast(currentPackage)
+                Log.d(DETECT_TAG, "Full-page block shown for keyword=$matchedKeyword")
             }
         } catch (e: Exception) {
-            Log.e(DETECT_TAG, "Error during inline moderation — skipping pass", e)
+            Log.e(DETECT_TAG, "Error during content moderation — skipping pass", e)
         }
     }
 
-    private fun collectFlaggedContent(
+    private fun collectTextsAndMatch(
         node: AccessibilityNodeInfo,
         keywords: Set<String>,
-        packageName: String,
-        flaggedItems: MutableList<FlaggedContent>,
         allScrapedTexts: MutableList<String>,
+        onMatch: (String) -> Unit,
     ) {
         try {
             if (node.isVisibleToUser) {
-                val text = node.text?.toString()
-                val desc = node.contentDescription?.toString()
-
-                listOfNotNull(text, desc).forEach { raw ->
-                    if (raw.isBlank()) return@forEach
-                    allScrapedTexts.add(raw)
-                    val matched = findMatchedKeyword(raw, keywords) ?: return@forEach
-
-                    val bounds = Rect()
-                    node.getBoundsInScreen(bounds)
-                    if (bounds.width() <= 0 || bounds.height() <= 0) return@forEach
-
-                    val key = InlineModerationState.buildPostKey(packageName, bounds, raw)
-                    flaggedItems.add(FlaggedContent(key, bounds, matched))
-                }
+                listOfNotNull(node.text?.toString(), node.contentDescription?.toString())
+                    .forEach { raw ->
+                        if (raw.isBlank()) return@forEach
+                        allScrapedTexts.add(raw)
+                        findMatchedKeyword(raw, keywords)?.let(onMatch)
+                    }
             }
-
             for (i in 0 until node.childCount) {
                 val child = node.getChild(i) ?: continue
-                collectFlaggedContent(child, keywords, packageName, flaggedItems, allScrapedTexts)
+                collectTextsAndMatch(child, keywords, allScrapedTexts, onMatch)
             }
         } catch (e: Exception) {
-            Log.w(DETECT_TAG, "Node collection error — continuing", e)
+            Log.w(DETECT_TAG, "Node traversal error — continuing", e)
         }
     }
 
     private fun findMatchedKeyword(text: String, keywords: Set<String>): String? {
         val lowerText = text.lowercase()
         return keywords.firstOrNull { lowerText.contains(it) }
+    }
+
+    private fun onContinueInSocialApp() {
+        Log.d(DETECT_TAG, "Continue — dismissing block, user stays in social app")
+        blockSuppressedUntilMs = System.currentTimeMillis() + blockSuppressDurationMs
+        handler.removeCallbacks(updateRunnable)
+        pendingUpdate = false
+    }
+
+    private fun exitSocialMediaApp() {
+        Log.d(DETECT_TAG, "Exit App — leaving social media app")
+        blockSuppressedUntilMs = System.currentTimeMillis() + blockSuppressDurationMs
+        handler.removeCallbacks(updateRunnable)
+        pendingUpdate = false
+        try {
+            performGlobalAction(GLOBAL_ACTION_HOME)
+        } catch (e: Exception) {
+            Log.e(DETECT_TAG, "Failed to exit social app via HOME", e)
+        }
     }
 
     private fun sendScrapedTextsToFlutter(texts: List<String>, packageName: String) {
@@ -225,17 +243,31 @@ class SaifeAccessibilityService : AccessibilityService() {
         }
     }
 
+    private fun sendContentBlockedBroadcast(packageName: String) {
+        try {
+            val intent = Intent("com.girlified.saife.CONTENT_BLOCKED").apply {
+                setPackage(applicationContext.packageName)
+                putExtra("event", "content_blocked")
+                putExtra("data", packageName)
+                putExtra("timestamp", System.currentTimeMillis())
+            }
+            sendBroadcast(intent)
+        } catch (e: Exception) {
+            Log.e(DETECT_TAG, "Error sending content blocked broadcast", e)
+        }
+    }
+
     override fun onInterrupt() {
         Log.d(TAG, "Girlified Service Interrupted")
         isProtectionActive = false
-        inlineOverlayManager?.resetSession()
+        fullPageOverlayManager?.dismiss()
     }
 
     override fun onDestroy() {
         super.onDestroy()
         Log.d(TAG, "Girlified Service Destroyed")
         isProtectionActive = false
-        inlineOverlayManager?.resetSession()
+        fullPageOverlayManager?.dismiss()
         try {
             unregisterReceiver(controlReceiver)
         } catch (_: Exception) {
